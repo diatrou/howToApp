@@ -68,6 +68,21 @@ const StorageManager = {
         return this.writeSteps(steps);
     },
 
+    reorderSteps(stepIds) {
+        const steps = this.getSteps();
+        const stepById = new Map(steps.map(step => [step.id, step]));
+        const reordered = stepIds
+            .map((id, index) => {
+                const step = stepById.get(id);
+                return step ? { ...step, order: index + 1 } : null;
+            })
+            .filter(Boolean);
+        return this.writeSteps([
+            ...reordered,
+            ...steps.filter(step => !stepIds.includes(step.id))
+        ]);
+    },
+
     writeSteps(steps) {
         if (!Array.isArray(steps) || !steps.every(this.isValidStep)) {
             const error = new Error('A step contains invalid data and was not saved.');
@@ -95,6 +110,10 @@ const StorageManager = {
             typeof step.description === 'string' && step.description.trim() &&
             Number.isInteger(Number(step.order)) && Number(step.order) >= 1 &&
             (step.subcategory === undefined || typeof step.subcategory === 'string') &&
+            (step.tags === undefined || (Array.isArray(step.tags) && step.tags.every(tag => typeof tag === 'string'))) &&
+            (step.dueDate === undefined || step.dueDate === '' || (
+                typeof step.dueDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(step.dueDate)
+            )) &&
             (step.image === undefined || step.image === '' || (
                 typeof step.image === 'string' &&
                 /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/]+={0,2}$/i.test(step.image)
@@ -115,3 +134,7 @@ const StorageManager = {
         return error;
     }
 };
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = StorageManager;
+}
