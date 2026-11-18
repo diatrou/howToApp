@@ -1,6 +1,13 @@
 // Κεντρική λογική εφαρμογής και διαχείριση UI
 // Main application logic and UI management
 document.addEventListener('DOMContentLoaded', () => {
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js').catch(error => {
+                console.error('HowToApp could not register offline support:', error);
+            });
+        });
+    }
     // Αναφορές σε στοιχεία του DOM
     // DOM elements references
     const stepForm = document.getElementById('step-form');
@@ -9,6 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const categoryFilter = document.getElementById('category-filter');
     const subcategoryFilter = document.getElementById('subcategory-filter');
     const sortSelect = document.getElementById('sort-select');
+    const statusFilter = document.getElementById('status-filter');
+    const tagFilter = document.getElementById('tag-filter');
+    const presentButton = document.getElementById('present-steps');
+    const undoDeleteButton = document.getElementById('undo-delete');
+    const statusText = document.getElementById('status-text');
     const importFileInput = document.getElementById('import-file');
     const importModeSelect = document.getElementById('import-mode');
     const exportButton = document.getElementById('export-steps');
@@ -17,6 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitButton = stepForm.querySelector('button[type="submit"]');
     const languageSelect = document.getElementById('language-select');
     let editingStepId = null;
+    let deletedStep = null;
+    let undoTimer = null;
+    let presentationSteps = [];
+    let presentationIndex = 0;
     const translations = {
         el: {
             pageTitle: 'HowToApp - Οδηγός βημάτων και συμβουλών',
@@ -32,6 +48,15 @@ document.addEventListener('DOMContentLoaded', () => {
             categoryPlaceholder: 'π.χ. Προγραμματισμός',
             subcategoryLabel: 'Υποκατηγορία:',
             subcategoryPlaceholder: 'π.χ. Git',
+            tagsLabel: 'Ετικέτες:',
+            tagsPlaceholder: 'π.χ. δουλειά, επείγον',
+            dueDateLabel: 'Ημερομηνία ολοκλήρωσης:',
+            tagFilterPlaceholder: 'Ετικέτα...',
+            statusFilterLabel: 'Φίλτρο κατάστασης',
+            allStatuses: 'Όλες οι καταστάσεις',
+            pendingStatus: 'Σε εκκρεμότητα',
+            completedStatus: 'Ολοκληρωμένα',
+            todayStatus: 'Για σήμερα',
             titleLabel: 'Τίτλος βήματος:',
             titlePlaceholder: 'π.χ. Αρχικοποίηση αποθετηρίου',
             orderLabel: 'Σειρά εκτέλεσης:',
@@ -61,6 +86,15 @@ document.addEventListener('DOMContentLoaded', () => {
             markComplete: 'Σήμανση ως ολοκληρωμένο',
             edit: 'Επεξεργασία',
             delete: 'Διαγραφή',
+            present: 'Παρουσίαση',
+            presentSteps: 'Παρουσίαση',
+            previous: 'Προηγούμενο',
+            next: 'Επόμενο',
+            undo: 'Αναίρεση',
+            noPresentation: 'Δεν υπάρχουν βήματα για παρουσίαση.',
+            draftRestored: 'Το μη αποθηκευμένο προσχέδιο ανακτήθηκε.',
+            dueToday: 'Για σήμερα',
+            overdue: 'Εκπρόθεσμο',
             imageAlt: 'Εικόνα βήματος',
             confirmDelete: 'Θέλετε σίγουρα να διαγράψετε αυτό το βήμα;',
             confirmReplace: 'Η εισαγωγή θα αντικαταστήσει όλα τα υπάρχοντα βήματα. Συνέχεια;',
@@ -98,6 +132,15 @@ document.addEventListener('DOMContentLoaded', () => {
             categoryPlaceholder: 'e.g. Programming',
             subcategoryLabel: 'Subcategory:',
             subcategoryPlaceholder: 'e.g. Git',
+            tagsLabel: 'Tags:',
+            tagsPlaceholder: 'e.g. work, urgent',
+            dueDateLabel: 'Due date:',
+            tagFilterPlaceholder: 'Tag...',
+            statusFilterLabel: 'Status filter',
+            allStatuses: 'All statuses',
+            pendingStatus: 'Pending',
+            completedStatus: 'Completed',
+            todayStatus: 'Due today',
             titleLabel: 'Step title:',
             titlePlaceholder: 'e.g. Initialize a repository',
             orderLabel: 'Execution order:',
@@ -127,6 +170,15 @@ document.addEventListener('DOMContentLoaded', () => {
             markComplete: 'Mark as complete',
             edit: 'Edit',
             delete: 'Delete',
+            present: 'Present',
+            presentSteps: 'Present',
+            previous: 'Previous',
+            next: 'Next',
+            undo: 'Undo',
+            noPresentation: 'No steps are available for presentation.',
+            draftRestored: 'Your unsaved draft was restored.',
+            dueToday: 'Due today',
+            overdue: 'Overdue',
             imageAlt: 'Step image',
             confirmDelete: 'Are you sure you want to delete this step?',
             confirmReplace: 'This will replace all existing steps. Continue?',
@@ -164,6 +216,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Φόρτωση και εμφάνιση βημάτων κατά την εκκίνηση
     // Load and render steps on startup
     renderSteps();
+    restoreDraft();
+
+    stepForm.addEventListener('input', () => {
+        if (!editingStepId) saveDraft();
+    });
 
     languageSelect.addEventListener('change', () => {
         currentLanguage = languageSelect.value;
@@ -186,11 +243,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Λήψη τιμών από τα πεδία
         // Get values from fields
-        const category = document.getElementById('category').value.trim();
-        const subcategory = document.getElementById('subcategory').value.trim();
-        const title = document.getElementById('title').value.trim();
+        const category = normalizeText(document.getElementById('category').value);
+        const subcategory = normalizeText(document.getElementById('subcategory').value);
+        const title = normalizeText(document.getElementById('title').value);
         const order = document.getElementById('step-order').value;
         const description = document.getElementById('description').value.trim();
+        const tags = document.getElementById('tags').value
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(Boolean);
+        const dueDate = document.getElementById('due-date').value;
         const imageInput = document.getElementById('step-image');
         let existingStep;
         try {
@@ -209,6 +271,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 title,
                 order,
                 description,
+                tags,
+                dueDate,
                 image: imageUrl
             };
 
@@ -219,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     StorageManager.saveStep({ ...stepData, completed: false });
                     stepForm.reset();
+                    clearDraft();
                 }
                 renderSteps();
                 showStatus(t('stepSaved'));
@@ -242,6 +307,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Διαχείριση αναζήτησης/φιλτραρίσματος
     // Handle search/filtering
     searchInput.addEventListener('input', renderSteps);
+    statusFilter.addEventListener('change', renderSteps);
+    tagFilter.addEventListener('input', renderSteps);
 
     categoryFilter.addEventListener('change', () => {
         subcategoryFilter.value = '';
@@ -249,6 +316,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     subcategoryFilter.addEventListener('change', renderSteps);
     sortSelect.addEventListener('change', renderSteps);
+    presentButton.addEventListener('click', () => startPresentation(getVisibleSteps()));
+
+    const presentationModal = document.getElementById('presentation-modal');
+    document.getElementById('presentation-close').addEventListener('click', closePresentation);
+    document.getElementById('presentation-prev').addEventListener('click', () => movePresentation(-1));
+    document.getElementById('presentation-next').addEventListener('click', () => movePresentation(1));
+    document.addEventListener('keydown', (event) => {
+        if (presentationModal.hidden) return;
+        if (event.key === 'Escape') closePresentation();
+        if (event.key === 'ArrowLeft') movePresentation(-1);
+        if (event.key === 'ArrowRight') movePresentation(1);
+    });
 
     exportButton.addEventListener('click', () => {
         try {
@@ -287,6 +366,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 title: step.title.trim(),
                 order: Number(step.order),
                 description: step.description.trim(),
+                tags: Array.isArray(step.tags)
+                    ? [...new Set(step.tags.map(tag => tag.trim()).filter(Boolean))]
+                    : typeof step.tags === 'string'
+                        ? [...new Set(step.tags.split(',').map(tag => tag.trim()).filter(Boolean))]
+                        : [],
+                dueDate: step.dueDate || '',
                 image: step.image || '',
                 completed: Boolean(step.completed)
             }));
@@ -307,6 +392,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     cancelEditButton.addEventListener('click', stopEditing);
+    undoDeleteButton.addEventListener('click', () => {
+        if (!deletedStep) return;
+        try {
+            StorageManager.importSteps([deletedStep], false);
+            deletedStep = null;
+            clearTimeout(undoTimer);
+            undoDeleteButton.hidden = true;
+            renderSteps();
+            showStatus(t('stepSaved'));
+        } catch (error) {
+            showError(error);
+        }
+    });
 
     stepsContainer.addEventListener('click', (event) => {
         const button = event.target.closest('button[data-action]');
@@ -323,16 +421,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('title').value = step.title;
                 document.getElementById('step-order').value = step.order;
                 document.getElementById('description').value = step.description;
+                document.getElementById('tags').value = (step.tags || []).join(', ');
+                document.getElementById('due-date').value = step.dueDate || '';
                 submitButton.textContent = t('updateStep');
                 document.getElementById('form-heading').textContent = t('formTitleEdit');
                 cancelEditButton.hidden = false;
                 document.getElementById('title').focus();
+            } else if (button.dataset.action === 'present') {
+                const visibleSteps = getVisibleSteps();
+                startPresentation(visibleSteps.length ? visibleSteps : [step]);
             } else if (button.dataset.action === 'delete' &&
                 confirm(t('confirmDelete'))) {
                 StorageManager.deleteStep(step.id);
                 if (editingStepId === step.id) stopEditing();
                 renderSteps();
-                showStatus(t('stepDeleted'));
+                deletedStep = { ...step };
+                showStatus(t('stepDeleted'), true);
+                clearTimeout(undoTimer);
+                undoTimer = setTimeout(() => {
+                    deletedStep = null;
+                    undoDeleteButton.hidden = true;
+                }, 8000);
             }
         } catch (error) {
             showError(error);
@@ -354,9 +463,48 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    stepsContainer.addEventListener('dragstart', (event) => {
+        const card = event.target.closest('.step-card');
+        if (!card) return;
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', card.dataset.id);
+        card.classList.add('dragging');
+    });
+
+    stepsContainer.addEventListener('dragend', (event) => {
+        event.target.closest('.step-card')?.classList.remove('dragging');
+    });
+
+    stepsContainer.addEventListener('dragover', (event) => {
+        if (event.target.closest('.step-card')) event.preventDefault();
+    });
+
+    stepsContainer.addEventListener('drop', (event) => {
+        event.preventDefault();
+        const target = event.target.closest('.step-card');
+        if (!target) return;
+        const draggedId = event.dataTransfer.getData('text/plain');
+        if (!draggedId || draggedId === target.dataset.id) return;
+        try {
+            const cards = [...stepsContainer.querySelectorAll('.step-card')];
+            const ids = cards.map(card => card.dataset.id);
+            const from = ids.indexOf(draggedId);
+            const to = ids.indexOf(target.dataset.id);
+            if (from >= 0 && to >= 0) {
+                ids.splice(from, 1);
+                ids.splice(to, 0, draggedId);
+                StorageManager.reorderSteps(ids);
+                renderSteps();
+            }
+        } catch (error) {
+            showError(error);
+        }
+    });
+
     function stopEditing() {
         editingStepId = null;
         stepForm.reset();
+        clearDraft();
         document.getElementById('form-heading').textContent = t('formTitle');
         submitButton.textContent = t('saveStep');
         cancelEditButton.hidden = true;
@@ -378,12 +526,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const steps = StorageManager.getSteps();
         updateFilterOptions(steps);
         const searchText = searchInput.value.trim().toLocaleLowerCase();
+        const selectedTag = tagFilter.value.trim().toLocaleLowerCase();
+        const today = new Date().toISOString().slice(0, 10);
 
         const filteredSteps = steps.filter(step => {
             const matchesSearch = [
-                step.title, step.category, step.subcategory || '', step.description
+                step.title, step.category, step.subcategory || '', step.description,
+                ...(step.tags || [])
             ].some(value => value.toLocaleLowerCase().includes(searchText));
+            const matchesStatus = !statusFilter.value ||
+                (statusFilter.value === 'completed' && step.completed) ||
+                (statusFilter.value === 'pending' && !step.completed) ||
+                (statusFilter.value === 'today' && step.dueDate === today);
+            const matchesTag = !selectedTag ||
+                (step.tags || []).some(tag => tag.toLocaleLowerCase().includes(selectedTag));
             return matchesSearch &&
+                matchesStatus &&
+                matchesTag &&
                 (!categoryFilter.value || step.category === categoryFilter.value) &&
                 (!subcategoryFilter.value || step.subcategory === subcategoryFilter.value);
         });
@@ -421,6 +580,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const stepCard = document.createElement('div');
             stepCard.className = 'step-card card';
+            stepCard.draggable = true;
+            stepCard.dataset.id = step.id;
             if (step.completed) stepCard.classList.add('is-complete');
             stepCard.style.marginBottom = '15px';
 
@@ -438,8 +599,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </label>
                 <h3 style="margin: 5px 0 10px 0; font-size: 1.1rem;">${escapeHtml(step.title)}</h3>
                 <p style="white-space: pre-line; color: #4b5563; font-size: 0.95rem;">${escapeHtml(step.description)}</p>
+                ${(step.tags || []).length ? `<div class="tag-list">${step.tags.map(tag => `<span class="tag-badge">${escapeHtml(tag)}</span>`).join('')}</div>` : ''}
+                ${step.dueDate ? `<p class="due-date ${getDueDateClass(step.dueDate, step.completed)}">${escapeHtml(getDueDateLabel(step.dueDate, step.completed))}: ${escapeHtml(step.dueDate)}</p>` : ''}
                 ${step.image ? `<div class="step-img-container" style="margin-top: 10px;"><img src="${escapeHtml(step.image)}" alt="${escapeHtml(t('imageAlt'))}" style="max-width: 100%; max-height: 200px; border-radius: 4px;"></div>` : ''}
                 <div class="step-actions">
+                    <button type="button" data-action="present" data-id="${escapeHtml(step.id)}" class="btn-secondary">${escapeHtml(t('present'))}</button>
                     <button type="button" data-action="edit" data-id="${escapeHtml(step.id)}" class="btn-secondary">${escapeHtml(t('edit'))}</button>
                     <button type="button" data-action="delete" data-id="${escapeHtml(step.id)}" class="btn-danger">${escapeHtml(t('delete'))}</button>
                 </div>
@@ -469,6 +633,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         subcategoryFilter.disabled = subcategories.length === 0;
         subcategoryFilter.value = subcategories.includes(selectedSubcategory) ? selectedSubcategory : '';
+
+        const tagOptions = document.getElementById('tag-options');
+        const tags = [...new Set(steps.flatMap(step => step.tags || []))]
+            .sort((a, b) => a.localeCompare(b));
+        tagOptions.replaceChildren(...tags.map(tag => createOption(tag, tag)));
     }
 
     function isValidImportedStep(step) {
@@ -479,6 +648,9 @@ document.addEventListener('DOMContentLoaded', () => {
             Number.isFinite(Number(step.order)) && Number(step.order) >= 1 &&
             Number.isInteger(Number(step.order)) &&
             (!step.subcategory || typeof step.subcategory === 'string') &&
+            (step.tags === undefined || Array.isArray(step.tags) || typeof step.tags === 'string') &&
+            (step.dueDate === undefined || step.dueDate === '' ||
+                (typeof step.dueDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(step.dueDate))) &&
             (!step.image || (
                 typeof step.image === 'string' &&
                 step.image.length <= 1_500_000 &&
@@ -572,14 +744,133 @@ document.addEventListener('DOMContentLoaded', () => {
         return Number(id.match(/^step_(\d+)/)?.[1]) || 0;
     }
 
-    function showStatus(message) {
-        statusMessage.textContent = message;
+    function normalizeText(value) {
+        return value.trim().replace(/\s+/g, ' ');
+    }
+
+    function saveDraft() {
+        const draft = {
+            category: document.getElementById('category').value,
+            subcategory: document.getElementById('subcategory').value,
+            title: document.getElementById('title').value,
+            order: document.getElementById('step-order').value,
+            description: document.getElementById('description').value,
+            tags: document.getElementById('tags').value,
+            dueDate: document.getElementById('due-date').value
+        };
+        try {
+            localStorage.setItem('howto_app_draft', JSON.stringify(draft));
+        } catch (error) {
+            showError(error);
+        }
+    }
+
+    function restoreDraft() {
+        try {
+            const rawDraft = localStorage.getItem('howto_app_draft');
+            if (!rawDraft) return;
+            const draft = JSON.parse(rawDraft);
+            document.getElementById('category').value = draft.category || '';
+            document.getElementById('subcategory').value = draft.subcategory || '';
+            document.getElementById('title').value = draft.title || '';
+            document.getElementById('step-order').value = draft.order || 1;
+            document.getElementById('description').value = draft.description || '';
+            document.getElementById('tags').value = draft.tags || '';
+            document.getElementById('due-date').value = draft.dueDate || '';
+            showStatus(t('draftRestored'));
+        } catch (error) {
+            localStorage.removeItem('howto_app_draft');
+        }
+    }
+
+    function clearDraft() {
+        try {
+            localStorage.removeItem('howto_app_draft');
+        } catch (error) {
+            showError(error);
+        }
+    }
+
+    function getVisibleSteps() {
+        return [...stepsContainer.querySelectorAll('.step-card')]
+            .map(card => StorageManager.getSteps().find(step => step.id === card.dataset.id))
+            .filter(Boolean);
+    }
+
+    function startPresentation(steps) {
+        if (!steps.length) {
+            showStatus(t('noPresentation'));
+            return;
+        }
+        presentationSteps = steps;
+        presentationIndex = 0;
+        presentationModal.hidden = false;
+        document.body.classList.add('presentation-open');
+        renderPresentation();
+        document.getElementById('presentation-close').focus();
+    }
+
+    function closePresentation() {
+        presentationModal.hidden = true;
+        document.body.classList.remove('presentation-open');
+        presentButton.focus();
+    }
+
+    function movePresentation(delta) {
+        presentationIndex = Math.max(
+            0,
+            Math.min(presentationSteps.length - 1, presentationIndex + delta)
+        );
+        renderPresentation();
+    }
+
+    function renderPresentation() {
+        const step = presentationSteps[presentationIndex];
+        if (!step) return;
+        document.getElementById('presentation-progress').textContent =
+            `${presentationIndex + 1} / ${presentationSteps.length}`;
+        document.getElementById('presentation-category').textContent =
+            [step.category, step.subcategory].filter(Boolean).join(' / ');
+        document.getElementById('presentation-title').textContent = step.title;
+        document.getElementById('presentation-description').textContent = step.description;
+        const image = document.getElementById('presentation-image');
+        if (step.image) {
+            image.src = step.image;
+            image.alt = t('imageAlt');
+            image.hidden = false;
+        } else {
+            image.removeAttribute('src');
+            image.hidden = true;
+        }
+        document.getElementById('presentation-prev').disabled = presentationIndex === 0;
+        document.getElementById('presentation-next').disabled =
+            presentationIndex === presentationSteps.length - 1;
+    }
+
+    function getDueDateClass(dueDate, completed) {
+        if (completed) return 'is-complete';
+        const today = new Date().toISOString().slice(0, 10);
+        return dueDate < today ? 'is-overdue' : dueDate === today ? 'is-today' : '';
+    }
+
+    function getDueDateLabel(dueDate, completed) {
+        if (completed) return t('completed');
+        const today = new Date().toISOString().slice(0, 10);
+        if (dueDate < today) return t('overdue');
+        if (dueDate === today) return t('dueToday');
+        return t('dueDateLabel').replace(':', '');
+    }
+
+    function showStatus(message, allowUndo = false) {
+        statusText.textContent = message;
         statusMessage.hidden = !message;
+        undoDeleteButton.hidden = !allowUndo;
         statusMessage.classList.remove('is-error');
     }
 
     function showError(error, messageKey = null) {
-        statusMessage.textContent = messageKey
+        undoDeleteButton.hidden = true;
+        statusText.textContent = messageKey
             ? t(messageKey, { details: error.message })
             : error.code && translations[currentLanguage][error.code]
             ? t(error.code)

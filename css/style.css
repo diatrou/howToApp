@@ -274,3 +274,141 @@ select:focus-visible {
     max-height: 500px;
     overflow-y: auto;
 }
+
+.compact-button {
+    width: auto;
+    padding: 8px 12px;
+}
+
+.undo-button {
+    margin-left: 10px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.tag-badge {
+    background: #ede9fe;
+    color: #5b21b6;
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 0.78rem;
+}
+
+.due-date {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.due-date.is-today {
+    color: #b45309;
+}
+
+.due-date.is-overdue {
+    color: #dc2626;
+}
+
+.step-card {
+    cursor: grab;
+}
+
+.step-card.dragging {
+    opacity: 0.5;
+}
+
+.presentation-open {
+    overflow: hidden;
+}
+
+.presentation-modal[hidden] {
+    display: none;
+}
+
+.presentation-modal {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    place-items: center;
+    gap: 20px;
+    padding: 64px 24px 24px;
+    box-sizing: border-box;
+    color: white;
+    background:
+        radial-gradient(circle at top right, rgba(99, 102, 241, 0.5), transparent 35%),
+        linear-gradient(135deg, #111827, #312e81);
+}
+
+.presentation-close {
+    position: absolute;
+    top: 16px;
+    right: 24px;
+    border: 0;
+    background: transparent;
+    color: white;
+    font-size: 2.5rem;
+    cursor: pointer;
+}
+
+.presentation-progress {
+    position: absolute;
+    top: 28px;
+    left: 24px;
+    font-weight: 700;
+}
+
+.presentation-slide {
+    width: min(900px, 90vw);
+    max-height: calc(100vh - 180px);
+    overflow-y: auto;
+    text-align: center;
+}
+
+.presentation-category {
+    display: inline-block;
+    margin-bottom: 12px;
+    color: #c7d2fe;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.presentation-slide h2 {
+    margin: 0 0 24px;
+    font-size: clamp(2rem, 6vw, 4.5rem);
+}
+
+.presentation-slide p {
+    white-space: pre-line;
+    font-size: clamp(1.1rem, 2.5vw, 1.75rem);
+    line-height: 1.6;
+}
+
+.presentation-slide img {
+    max-width: min(700px, 80vw);
+    max-height: 35vh;
+    margin-top: 12px;
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.presentation-controls {
+    display: flex;
+    gap: 12px;
+}
+
+.presentation-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

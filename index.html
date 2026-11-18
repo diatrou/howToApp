@@ -13,6 +13,8 @@
     <!-- Σύνδεση με το εξωτερικό stylesheet -->
     <!-- Link to external stylesheet -->
     <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#4f46e5">
 </head>
 <body>
 
@@ -33,7 +35,10 @@
                 </select>
             </div>
         </header>
-        <p id="status-message" class="status-message" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+        <p id="status-message" class="status-message" role="status" aria-live="polite" aria-atomic="true" hidden>
+            <span id="status-text"></span>
+            <button type="button" id="undo-delete" class="undo-button" data-i18n="undo" hidden>Αναίρεση</button>
+        </p>
 
         <!-- Κύριος κορμός με φόρμα και λίστα προβολής -->
         <!-- Main body with form and view list -->
@@ -52,11 +57,36 @@
                         <input type="text" id="category" required placeholder="π.χ. Προγραμματισμός" data-i18n-placeholder="categoryPlaceholder">
                     </div>
 
+                    <div id="presentation-modal" class="presentation-modal" role="dialog" aria-modal="true" aria-labelledby="presentation-title" hidden>
+                        <button type="button" id="presentation-close" class="presentation-close" aria-label="Κλείσιμο παρουσίασης">&times;</button>
+                        <div class="presentation-progress" id="presentation-progress"></div>
+                        <article class="presentation-slide">
+                            <span id="presentation-category" class="presentation-category"></span>
+                            <h2 id="presentation-title"></h2>
+                            <p id="presentation-description"></p>
+                            <img id="presentation-image" alt="" hidden>
+                        </article>
+                        <div class="presentation-controls">
+                            <button type="button" id="presentation-prev" class="btn-secondary" data-i18n="previous">Προηγούμενο</button>
+                            <button type="button" id="presentation-next" class="btn-primary" data-i18n="next">Επόμενο</button>
+                        </div>
+                    </div>
+
                     <!-- Επιλογή υποκατηγορίας -->
                     <!-- Subcategory selection -->
                     <div class="form-group">
                         <label for="subcategory" data-i18n="subcategoryLabel">Υποκατηγορία:</label>
                         <input type="text" id="subcategory" placeholder="π.χ. Git" data-i18n-placeholder="subcategoryPlaceholder">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tags" data-i18n="tagsLabel">Ετικέτες:</label>
+                        <input type="text" id="tags" placeholder="π.χ. δουλειά, επείγον" data-i18n-placeholder="tagsPlaceholder">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="due-date" data-i18n="dueDateLabel">Ημερομηνία ολοκλήρωσης:</label>
+                        <input type="date" id="due-date">
                     </div>
 
                     <!-- Τίτλος βήματος/συμβουλής -->
@@ -104,6 +134,14 @@
                 <div class="filter-group">
                     <label class="sr-only" for="search-input" data-i18n="searchLabel">Αναζήτηση βημάτων</label>
                     <input type="search" id="search-input" placeholder="Αναζήτηση βημάτων..." data-i18n-placeholder="searchPlaceholder">
+                    <select id="status-filter" data-i18n-aria-label="statusFilterLabel">
+                        <option value="" data-i18n="allStatuses">Όλες οι καταστάσεις</option>
+                        <option value="pending" data-i18n="pendingStatus">Σε εκκρεμότητα</option>
+                        <option value="completed" data-i18n="completedStatus">Ολοκληρωμένα</option>
+                        <option value="today" data-i18n="todayStatus">Για σήμερα</option>
+                    </select>
+                    <input type="text" id="tag-filter" list="tag-options" placeholder="Ετικέτα..." data-i18n-placeholder="tagFilterPlaceholder">
+                    <datalist id="tag-options"></datalist>
                     <select id="category-filter" data-i18n-aria-label="categoryFilterLabel">
                         <option value="" data-i18n="allCategories">Όλες οι κατηγορίες</option>
                     </select>
@@ -119,6 +157,7 @@
                 </div>
                 <div class="data-actions">
                     <button type="button" id="export-steps" class="btn-secondary" data-i18n="exportBackup">Εξαγωγή αντιγράφου</button>
+                    <button type="button" id="present-steps" class="btn-primary compact-button" data-i18n="presentSteps">Παρουσίαση</button>
                     <label for="import-file" data-i18n="importBackup">Εισαγωγή αντιγράφου:</label>
                     <input type="file" id="import-file" accept="application/json,.json">
                     <select id="import-mode" aria-label="Συμπεριφορά εισαγωγής" data-i18n-aria-label="importModeLabel">
