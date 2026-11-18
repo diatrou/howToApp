@@ -201,6 +201,27 @@ header p {
     grid-column: 1 / -1;
 }
 
+.data-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.data-actions label {
+    font-weight: 600;
+}
+
+.data-actions input,
+.data-actions select {
+    min-width: 0;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: white;
+}
+
 .category-heading {
     margin: 18px 0 8px;
     color: var(--primary-color);

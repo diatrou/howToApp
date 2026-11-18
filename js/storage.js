@@ -57,6 +57,20 @@ const StorageManager = {
         return steps;
     },
 
+    importSteps(importedSteps, replaceExisting) {
+        const existingSteps = replaceExisting ? [] : this.getSteps();
+        const stepsById = new Map(existingSteps.map(step => [step.id, step]));
+        importedSteps.forEach(step => stepsById.set(step.id, step));
+        const steps = [...stepsById.values()];
+        steps.sort((a, b) => {
+            if (a.category !== b.category) return a.category.localeCompare(b.category);
+            if (a.subcategory !== b.subcategory) return (a.subcategory || '').localeCompare(b.subcategory || '');
+            return Number(a.order) - Number(b.order);
+        });
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(steps));
+        return steps;
+    },
+
     // Διαγραφή βήματος βάσει ID
     // Delete step by ID
     deleteStep(stepId) {

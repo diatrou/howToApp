@@ -111,6 +111,15 @@
                         <option value="recent">Νεότερα πρώτα / Newest first</option>
                     </select>
                 </div>
+                <div class="data-actions">
+                    <button type="button" id="export-steps" class="btn-secondary">Εξαγωγή αντιγράφου / Export backup</button>
+                    <label for="import-file">Εισαγωγή αντιγράφου / Import backup:</label>
+                    <input type="file" id="import-file" accept="application/json,.json">
+                    <select id="import-mode" aria-label="Import behavior">
+                        <option value="replace">Αντικατάσταση όλων / Replace all</option>
+                        <option value="merge">Συγχώνευση / Merge</option>
+                    </select>
+                </div>
 
                 <!-- Δυναμική λίστα βημάτων -->
                 <!-- Dynamic steps list container -->

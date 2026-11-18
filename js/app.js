@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const categoryFilter = document.getElementById('category-filter');
     const subcategoryFilter = document.getElementById('subcategory-filter');
     const sortSelect = document.getElementById('sort-select');
+    const importFileInput = document.getElementById('import-file');
+    const importModeSelect = document.getElementById('import-mode');
+    const exportButton = document.getElementById('export-steps');
     const cancelEditButton = document.getElementById('cancel-edit');
     const submitButton = stepForm.querySelector('button[type="submit"]');
     let editingStepId = null;
@@ -81,6 +84,56 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     subcategoryFilter.addEventListener('change', renderSteps);
     sortSelect.addEventListener('change', renderSteps);
+
+    exportButton.addEventListener('click', () => {
+        const backup = {
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            steps: StorageManager.getSteps()
+        };
+        const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `howtoapp-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+    });
+
+    importFileInput.addEventListener('change', async () => {
+        const file = importFileInput.files[0];
+        if (!file) return;
+
+        try {
+            const parsed = JSON.parse(await file.text());
+            const records = Array.isArray(parsed) ? parsed : parsed?.version === 1 ? parsed.steps : null;
+            if (!Array.isArray(records) || !records.every(isValidImportedStep)) {
+                throw new Error('The selected file is not a valid HowToApp backup.');
+            }
+
+            const normalizedSteps = records.map(step => ({
+                id: typeof step.id === 'string' && step.id ? step.id : createImportedStepId(),
+                category: step.category.trim(),
+                subcategory: (step.subcategory || '').trim(),
+                title: step.title.trim(),
+                order: Number(step.order),
+                description: step.description.trim(),
+                image: step.image || '',
+                completed: Boolean(step.completed)
+            }));
+            const replaceExisting = importModeSelect.value === 'replace';
+            if (replaceExisting && !confirm('This will replace all existing steps. Continue? / Η εισαγωγή θα αντικαταστήσει όλα τα υπάρχοντα βήματα. Συνέχεια;')) {
+                return;
+            }
+
+            StorageManager.importSteps(normalizedSteps, replaceExisting);
+            renderSteps();
+            alert(`Imported ${normalizedSteps.length} steps. / Εισήχθησαν ${normalizedSteps.length} βήματα.`);
+        } catch (error) {
+            alert(`Import failed: ${error.message} / Αποτυχία εισαγωγής.`);
+        } finally {
+            importFileInput.value = '';
+        }
+    });
 
     cancelEditButton.addEventListener('click', stopEditing);
 
@@ -224,6 +277,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         subcategoryFilter.disabled = subcategories.length === 0;
         subcategoryFilter.value = subcategories.includes(selectedSubcategory) ? selectedSubcategory : '';
+    }
+
+    function isValidImportedStep(step) {
+        return step &&
+            typeof step.category === 'string' && step.category.trim() &&
+            typeof step.title === 'string' && step.title.trim() &&
+            typeof step.description === 'string' && step.description.trim() &&
+            Number.isFinite(Number(step.order)) && Number(step.order) >= 1 &&
+            Number.isInteger(Number(step.order)) &&
+            (!step.subcategory || typeof step.subcategory === 'string') &&
+            (!step.image || typeof step.image === 'string') &&
+            (step.id === undefined || typeof step.id === 'string') &&
+            (step.completed === undefined || typeof step.completed === 'boolean');
+    }
+
+    function createImportedStepId() {
+        const uniquePart = window.crypto && typeof window.crypto.randomUUID === 'function'
+            ? window.crypto.randomUUID()
+            : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        return `step_${uniquePart}`;
     }
 });
 
