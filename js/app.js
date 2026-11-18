@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sortSelect = document.getElementById('sort-select');
     const statusFilter = document.getElementById('status-filter');
     const tagFilter = document.getElementById('tag-filter');
+    const dateFilter = document.getElementById('date-filter');
     const presentButton = document.getElementById('present-steps');
     const undoDeleteButton = document.getElementById('undo-delete');
     const statusText = document.getElementById('status-text');
@@ -25,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const importModeSelect = document.getElementById('import-mode');
     const exportButton = document.getElementById('export-steps');
     const cancelEditButton = document.getElementById('cancel-edit');
+    const duplicateStepButton = document.getElementById('duplicate-step');
     const statusMessage = document.getElementById('status-message');
     const submitButton = stepForm.querySelector('button[type="submit"]');
     const languageSelect = document.getElementById('language-select');
@@ -33,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let undoTimer = null;
     let presentationSteps = [];
     let presentationIndex = 0;
+    let preservedImage = '';
     const translations = {
         el: {
             pageTitle: 'HowToApp - Οδηγός βημάτων και συμβουλών',
@@ -66,6 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
             saveStep: 'Αποθήκευση βήματος',
             updateStep: 'Ενημέρωση βήματος',
             cancel: 'Ακύρωση',
+            createDuplicate: 'Νέο βήμα με αυτά τα δεδομένα',
+            dateFilterLabel: 'Ημερομηνία ολοκλήρωσης',
             listTitle: 'Λίστα βημάτων και συμβουλών',
             searchLabel: 'Αναζήτηση βημάτων',
             searchPlaceholder: 'Αναζήτηση βημάτων...',
@@ -150,6 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
             saveStep: 'Save Step',
             updateStep: 'Update Step',
             cancel: 'Cancel',
+            createDuplicate: 'New step with these data',
+            dateFilterLabel: 'Completion date',
             listTitle: 'Steps and Tips',
             searchLabel: 'Search steps',
             searchPlaceholder: 'Search steps...',
@@ -264,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const processAndSave = (imageUrl = existingStep?.image || '') => {
+        const processAndSave = (imageUrl = existingStep?.image || preservedImage || '') => {
             const stepData = {
                 category,
                 subcategory,
@@ -282,8 +289,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     stopEditing();
                 } else {
                     StorageManager.saveStep({ ...stepData, completed: false });
-                    stepForm.reset();
-                    clearDraft();
+                    preservedImage = imageUrl;
+                    document.getElementById('category').value = category;
+                    document.getElementById('subcategory').value = subcategory;
+                    document.getElementById('title').value = title;
+                    document.getElementById('step-order').value = Number(order) + 1;
+                    document.getElementById('description').value = '';
+                    document.getElementById('tags').value = tags.join(', ');
+                    document.getElementById('due-date').value = dueDate;
+                    document.getElementById('step-image').value = '';
+                    saveDraft();
                 }
                 renderSteps();
                 showStatus(t('stepSaved'));
@@ -309,6 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.addEventListener('input', renderSteps);
     statusFilter.addEventListener('change', renderSteps);
     tagFilter.addEventListener('input', renderSteps);
+    dateFilter.addEventListener('change', renderSteps);
 
     categoryFilter.addEventListener('change', () => {
         subcategoryFilter.value = '';
@@ -395,6 +411,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     cancelEditButton.addEventListener('click', stopEditing);
+    duplicateStepButton.addEventListener('click', () => {
+        if (!editingStepId) return;
+        try {
+            const step = StorageManager.getSteps().find(item => item.id === editingStepId);
+            if (!step) return;
+            startDuplicate(step);
+        } catch (error) {
+            showError(error);
+        }
+    });
     undoDeleteButton.addEventListener('click', () => {
         if (!deletedStep) return;
         try {
@@ -428,8 +454,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('due-date').value = step.dueDate || '';
                 submitButton.textContent = t('updateStep');
                 document.getElementById('form-heading').textContent = t('formTitleEdit');
+                duplicateStepButton.hidden = false;
+                preservedImage = step.image || '';
                 cancelEditButton.hidden = false;
                 document.getElementById('title').focus();
+            } else if (button.dataset.action === 'duplicate') {
+                startDuplicate(step);
             } else if (button.dataset.action === 'present') {
                 const visibleSteps = getVisibleSteps();
                 startPresentation(visibleSteps.length ? visibleSteps : [step]);
@@ -506,11 +536,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function stopEditing() {
         editingStepId = null;
+        preservedImage = '';
+        duplicateStepButton.hidden = true;
         stepForm.reset();
         clearDraft();
         document.getElementById('form-heading').textContent = t('formTitle');
         submitButton.textContent = t('saveStep');
         cancelEditButton.hidden = true;
+    }
+
+    function startDuplicate(step) {
+        editingStepId = null;
+        preservedImage = step.image || '';
+        document.getElementById('category').value = step.category;
+        document.getElementById('subcategory').value = step.subcategory || '';
+        document.getElementById('title').value = step.title;
+        document.getElementById('step-order').value = step.order;
+        document.getElementById('description').value = '';
+        document.getElementById('tags').value = (step.tags || []).join(', ');
+        document.getElementById('due-date').value = step.dueDate || '';
+        document.getElementById('step-image').value = '';
+        document.getElementById('form-heading').textContent = t('formTitle');
+        submitButton.textContent = t('saveStep');
+        duplicateStepButton.hidden = true;
+        cancelEditButton.hidden = true;
+        clearDraft();
+        document.getElementById('description').focus();
     }
 
     // Συνάρτηση προβολής βημάτων στην οθόνη
@@ -543,9 +594,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 (statusFilter.value === 'today' && step.dueDate === today);
             const matchesTag = !selectedTag ||
                 (step.tags || []).some(tag => tag.toLocaleLowerCase().includes(selectedTag));
+            const matchesDate = !dateFilter.value || step.dueDate === dateFilter.value;
             return matchesSearch &&
                 matchesStatus &&
                 matchesTag &&
+                matchesDate &&
                 (!categoryFilter.value || step.category === categoryFilter.value) &&
                 (!subcategoryFilter.value || step.subcategory === subcategoryFilter.value);
         });
@@ -608,6 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="step-actions">
                     <button type="button" data-action="present" data-id="${escapeHtml(step.id)}" class="btn-secondary">${escapeHtml(t('present'))}</button>
                     <button type="button" data-action="edit" data-id="${escapeHtml(step.id)}" class="btn-secondary">${escapeHtml(t('edit'))}</button>
+                    <button type="button" data-action="duplicate" data-id="${escapeHtml(step.id)}" class="btn-secondary">${escapeHtml(t('createDuplicate'))}</button>
                     <button type="button" data-action="delete" data-id="${escapeHtml(step.id)}" class="btn-danger">${escapeHtml(t('delete'))}</button>
                 </div>
             `;

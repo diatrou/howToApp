@@ -120,6 +120,7 @@
                     <!-- Κουμπί υποβολής -->
                     <!-- Submit button -->
                     <button type="submit" class="btn-primary" data-i18n="saveStep">Αποθήκευση βήματος</button>
+                    <button type="button" id="duplicate-step" class="btn-secondary" data-i18n="createDuplicate" hidden>Νέο βήμα με αυτά τα δεδομένα</button>
                     <button type="button" id="cancel-edit" class="btn-secondary" data-i18n="cancel" hidden>Ακύρωση</button>
                 </form>
             </section>
@@ -142,6 +143,8 @@
                     </select>
                     <input type="text" id="tag-filter" list="tag-options" placeholder="Ετικέτα..." data-i18n-placeholder="tagFilterPlaceholder">
                     <datalist id="tag-options"></datalist>
+                    <label class="sr-only" for="date-filter" data-i18n="dateFilterLabel">Φίλτρο ημερομηνίας ολοκλήρωσης</label>
+                    <input type="date" id="date-filter" data-i18n-aria-label="dateFilterLabel">
                     <select id="category-filter" data-i18n-aria-label="categoryFilterLabel">
                         <option value="" data-i18n="allCategories">Όλες οι κατηγορίες</option>
                     </select>
