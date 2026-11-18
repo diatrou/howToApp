@@ -291,6 +291,36 @@ select:focus-visible {
     cursor: pointer;
 }
 
+.markdown-import-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(17, 24, 39, 0.55);
+}
+
+.markdown-import-modal[hidden] {
+    display: none;
+}
+
+.markdown-import-panel {
+    width: min(520px, 100%);
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    padding: 20px;
+    border-radius: 8px;
+    background: white;
+}
+
+.markdown-import-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+}
+
 .tag-list {
     display: flex;
     flex-wrap: wrap;

@@ -67,3 +67,52 @@ test('reorders steps without changing their categories', () => {
     assert.deepEqual(reordered.map(step => step.id), ['step_2', 'step_1']);
     assert.deepEqual(reordered.map(step => step.order), [1, 2]);
 });
+
+test('deletes only steps in the selected category and subcategory', () => {
+    installStorage({
+        howto_app_steps: JSON.stringify([
+            validStep({ id: 'step_1', category: 'Programming', subcategory: 'Git' }),
+            validStep({ id: 'step_2', category: 'Programming', subcategory: 'Testing' }),
+            validStep({ id: 'step_3', category: 'Cooking', subcategory: 'Git' })
+        ])
+    });
+
+    StorageManager.deleteSteps('Programming', 'Git');
+    assert.deepEqual(
+        StorageManager.getSteps().map(step => step.id).sort(),
+        ['step_2', 'step_3']
+    );
+});
+
+test('deletes all steps when no scope is selected', () => {
+    installStorage({
+        howto_app_steps: JSON.stringify([
+            validStep({ id: 'step_1' }),
+            validStep({ id: 'step_2' })
+        ])
+    });
+
+    StorageManager.deleteSteps();
+    assert.deepEqual(StorageManager.getSteps(), []);
+});
+
+test('creates one ordered step for each Markdown line', () => {
+    const steps = StorageManager.createStepsFromMarkdown(
+        '# First step\n\n- Second step\n3. Third step',
+        {
+            category: 'Programming',
+            subcategory: 'Git',
+            tags: ['work', 'guide'],
+            dueDate: '2026-11-18'
+        },
+        index => `step_${index + 1}`
+    );
+
+    assert.equal(steps.length, 3);
+    assert.deepEqual(steps.map(step => step.order), [1, 2, 3]);
+    assert.deepEqual(steps.map(step => step.title), ['First step', 'Second step', 'Third step']);
+    assert.equal(steps[0].category, 'Programming');
+    assert.equal(steps[0].subcategory, 'Git');
+    assert.deepEqual(steps[0].tags, ['work', 'guide']);
+    assert.equal(steps[0].dueDate, '2026-11-18');
+});

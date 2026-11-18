@@ -160,9 +160,12 @@
                 </div>
                 <div class="data-actions">
                     <button type="button" id="export-steps" class="btn-secondary" data-i18n="exportBackup">Εξαγωγή αντιγράφου</button>
+                    <button type="button" id="delete-all-steps" class="btn-danger" data-i18n="deleteAllSteps">Διαγραφή όλων των βημάτων</button>
                     <button type="button" id="present-steps" class="btn-primary compact-button" data-i18n="presentSteps">Παρουσίαση</button>
                     <label for="import-file" data-i18n="importBackup">Εισαγωγή αντιγράφου:</label>
                     <input type="file" id="import-file" accept="application/json,.json">
+                    <label for="import-md-file" data-i18n="importMarkdown">Εισαγωγή Markdown:</label>
+                    <input type="file" id="import-md-file" accept="text/markdown,.md,text/plain,.txt">
                     <select id="import-mode" aria-label="Συμπεριφορά εισαγωγής" data-i18n-aria-label="importModeLabel">
                         <option value="replace" data-i18n="replaceAll">Αντικατάσταση όλων</option>
                         <option value="merge" data-i18n="merge">Συγχώνευση</option>
@@ -178,6 +181,33 @@
             </section>
 
         </main>
+    </div>
+
+    <div id="markdown-import-modal" class="markdown-import-modal" role="dialog" aria-modal="true" aria-labelledby="markdown-import-title" hidden>
+        <form id="markdown-import-form" class="markdown-import-panel">
+            <h2 id="markdown-import-title" data-i18n="markdownImportTitle">Εισαγωγή αρχείου Markdown</h2>
+            <p id="markdown-import-summary"></p>
+            <div class="form-group">
+                <label for="markdown-category" data-i18n="categoryLabel">Κατηγορία:</label>
+                <input type="text" id="markdown-category" required>
+            </div>
+            <div class="form-group">
+                <label for="markdown-subcategory" data-i18n="subcategoryLabel">Υποκατηγορία:</label>
+                <input type="text" id="markdown-subcategory">
+            </div>
+            <div class="form-group">
+                <label for="markdown-tags" data-i18n="tagsLabel">Ετικέτες:</label>
+                <input type="text" id="markdown-tags" placeholder="π.χ. δουλειά, επείγον" data-i18n-placeholder="tagsPlaceholder">
+            </div>
+            <div class="form-group">
+                <label for="markdown-due-date" data-i18n="dueDateLabel">Ημερομηνία ολοκλήρωσης:</label>
+                <input type="date" id="markdown-due-date">
+            </div>
+            <div class="markdown-import-actions">
+                <button type="button" id="markdown-import-cancel" class="btn-secondary" data-i18n="cancel">Ακύρωση</button>
+                <button type="submit" class="btn-primary" data-i18n="importMarkdownSteps">Εισαγωγή βημάτων</button>
+            </div>
+        </form>
     </div>
 
     <!-- Σύνδεση με τα αρχεία JavaScript -->

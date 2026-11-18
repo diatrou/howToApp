@@ -68,6 +68,43 @@ const StorageManager = {
         return this.writeSteps(steps);
     },
 
+    deleteSteps(category = '', subcategory = '') {
+        const steps = this.getSteps();
+        const remainingSteps = steps.filter(step =>
+            (category && step.category !== category) ||
+            (subcategory && step.subcategory !== subcategory)
+        );
+        return this.writeSteps(remainingSteps);
+    },
+
+    createStepsFromMarkdown(markdown, common, createId) {
+        if (typeof markdown !== 'string') {
+            throw new Error('Markdown content must be text.');
+        }
+        const commonValues = common || {};
+        const lines = markdown.split(/\r?\n/)
+            .map(line => line
+                .replace(/^\s{0,3}#{1,6}\s*/, '')
+                .replace(/^\s{0,3}(?:[-+*]|\d+[.)])\s+/, '')
+                .trim())
+            .filter(Boolean);
+
+        return lines.map((title, index) => ({
+            id: createId ? createId(index) : `step_${Date.now()}_${index}_${Math.random().toString(36).slice(2)}`,
+            category: String(commonValues.category || '').trim(),
+            subcategory: String(commonValues.subcategory || '').trim(),
+            title,
+            order: index + 1,
+            description: title,
+            tags: Array.isArray(commonValues.tags)
+                ? [...commonValues.tags]
+                : [],
+            dueDate: String(commonValues.dueDate || ''),
+            image: '',
+            completed: false
+        }));
+    },
+
     reorderSteps(stepIds) {
         const steps = this.getSteps();
         const stepById = new Map(steps.map(step => [step.id, step]));

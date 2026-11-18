@@ -23,8 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const undoDeleteButton = document.getElementById('undo-delete');
     const statusText = document.getElementById('status-text');
     const importFileInput = document.getElementById('import-file');
+    const markdownImportFileInput = document.getElementById('import-md-file');
+    const markdownImportModal = document.getElementById('markdown-import-modal');
+    const markdownImportForm = document.getElementById('markdown-import-form');
+    const markdownImportCancel = document.getElementById('markdown-import-cancel');
     const importModeSelect = document.getElementById('import-mode');
     const exportButton = document.getElementById('export-steps');
+    const deleteAllButton = document.getElementById('delete-all-steps');
     const cancelEditButton = document.getElementById('cancel-edit');
     const duplicateStepButton = document.getElementById('duplicate-step');
     const statusMessage = document.getElementById('status-message');
@@ -36,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let presentationSteps = [];
     let presentationIndex = 0;
     let preservedImage = '';
+    let pendingMarkdown = '';
     const translations = {
         el: {
             pageTitle: 'HowToApp - Οδηγός βημάτων και συμβουλών',
@@ -81,7 +87,12 @@ document.addEventListener('DOMContentLoaded', () => {
             sortTitle: 'Τίτλος',
             sortRecent: 'Νεότερα πρώτα',
             exportBackup: 'Εξαγωγή αντιγράφου',
+            deleteAllSteps: 'Διαγραφή όλων των βημάτων',
             importBackup: 'Εισαγωγή αντιγράφου:',
+            importMarkdown: 'Εισαγωγή Markdown:',
+            markdownImportTitle: 'Εισαγωγή αρχείου Markdown',
+            markdownImportSummary: 'Βρέθηκαν {{count}} βήματα. Κάθε μη κενή γραμμή θα γίνει ένα βήμα.',
+            importMarkdownSteps: 'Εισαγωγή βημάτων',
             importModeLabel: 'Συμπεριφορά εισαγωγής',
             replaceAll: 'Αντικατάσταση όλων',
             merge: 'Συγχώνευση',
@@ -103,11 +114,15 @@ document.addEventListener('DOMContentLoaded', () => {
             imageAlt: 'Εικόνα βήματος',
             confirmDelete: 'Θέλετε σίγουρα να διαγράψετε αυτό το βήμα;',
             confirmReplace: 'Η εισαγωγή θα αντικαταστήσει όλα τα υπάρχοντα βήματα. Συνέχεια;',
+            confirmDeleteAll: 'Προειδοποίηση: πρώτα θα εξαχθεί αρχείο ασφαλείας και έπειτα θα διαγραφούν {{scope}}. Συνέχεια;',
+            confirmDeleteAllFallback: 'Όλα τα βήματα',
+            deleteAllSuccess: 'Τα επιλεγμένα βήματα διαγράφηκαν μετά την εξαγωγή του αντιγράφου.',
             stepSaved: 'Το βήμα αποθηκεύτηκε.',
             stepDeleted: 'Το βήμα διαγράφηκε.',
             backupExported: 'Το αντίγραφο ασφαλείας εξήχθη.',
             importSuccess: 'Εισήχθησαν {{count}} βήματα.',
             importFailed: 'Αποτυχία εισαγωγής: {{details}}',
+            markdownImported: 'Εισήχθησαν {{count}} βήματα από το αρχείο Markdown.',
             invalidBackup: 'Το αρχείο δεν είναι έγκυρο αντίγραφο HowToApp.',
             chooseImage: 'Επιλέξτε εικόνα PNG, JPEG ή WebP.',
             imageTooLarge: 'Οι εικόνες πρέπει να είναι έως 5 MB.',
@@ -167,7 +182,12 @@ document.addEventListener('DOMContentLoaded', () => {
             sortTitle: 'Title',
             sortRecent: 'Newest first',
             exportBackup: 'Export backup',
+            deleteAllSteps: 'Delete all steps',
             importBackup: 'Import backup:',
+            importMarkdown: 'Import Markdown:',
+            markdownImportTitle: 'Import Markdown file',
+            markdownImportSummary: '{{count}} steps found. Each non-empty line will become a step.',
+            importMarkdownSteps: 'Import steps',
             importModeLabel: 'Import behavior',
             replaceAll: 'Replace all',
             merge: 'Merge',
@@ -189,11 +209,15 @@ document.addEventListener('DOMContentLoaded', () => {
             imageAlt: 'Step image',
             confirmDelete: 'Are you sure you want to delete this step?',
             confirmReplace: 'This will replace all existing steps. Continue?',
+            confirmDeleteAll: 'Warning: a safety backup will be exported first, then {{scope}} will be deleted. Continue?',
+            confirmDeleteAllFallback: 'all steps',
+            deleteAllSuccess: 'The selected steps were deleted after the backup was exported.',
             stepSaved: 'Step saved.',
             stepDeleted: 'Step deleted.',
             backupExported: 'Backup exported.',
             importSuccess: 'Imported {{count}} steps.',
             importFailed: 'Import failed: {{details}}',
+            markdownImported: 'Imported {{count}} steps from the Markdown file.',
             invalidBackup: 'The selected file is not a valid HowToApp backup.',
             chooseImage: 'Choose a PNG, JPEG, or WebP image.',
             imageTooLarge: 'Images must be 5 MB or smaller.',
@@ -350,18 +374,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     exportButton.addEventListener('click', () => {
         try {
-            const backup = {
-                version: 1,
-                exportedAt: new Date().toISOString(),
-                steps: StorageManager.getSteps()
-            };
-            const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `howtoapp-backup-${new Date().toISOString().slice(0, 10)}.json`;
-            link.click();
-            setTimeout(() => URL.revokeObjectURL(url), 0);
+            exportBackup(`howtoapp-backup-${new Date().toISOString().slice(0, 10)}.json`);
             showStatus(t('backupExported'));
+        } catch (error) {
+            showError(error);
+        }
+    });
+
+    deleteAllButton.addEventListener('click', () => {
+        try {
+            const category = categoryFilter.value.trim();
+            const subcategory = subcategoryFilter.value.trim();
+            const scope = subcategory
+                ? `${category} / ${subcategory}`
+                : category
+                    ? category
+                    : t('confirmDeleteAllFallback');
+            if (!confirm(t('confirmDeleteAll', { scope }))) return;
+
+            exportBackup(createSafetyBackupFilename(category, subcategory));
+            StorageManager.deleteSteps(category, subcategory);
+            if (editingStepId) stopEditing();
+            renderSteps();
+            showStatus(t('deleteAllSuccess'));
         } catch (error) {
             showError(error);
         }
@@ -407,6 +442,68 @@ document.addEventListener('DOMContentLoaded', () => {
             showError(error, 'importFailed');
         } finally {
             importFileInput.value = '';
+        }
+    });
+
+    markdownImportFileInput.addEventListener('change', async () => {
+        const file = markdownImportFileInput.files[0];
+        if (!file) return;
+
+        try {
+            pendingMarkdown = await file.text();
+            const previewSteps = StorageManager.createStepsFromMarkdown(pendingMarkdown, {}, null);
+            if (!previewSteps.length) {
+                throw new Error(t('invalidBackup'));
+            }
+            document.getElementById('markdown-import-summary').textContent =
+                t('markdownImportSummary', { count: previewSteps.length });
+            document.getElementById('markdown-category').value = categoryFilter.value;
+            document.getElementById('markdown-subcategory').value = subcategoryFilter.value;
+            document.getElementById('markdown-tags').value = '';
+            document.getElementById('markdown-due-date').value = '';
+            markdownImportModal.hidden = false;
+            document.getElementById('markdown-category').focus();
+        } catch (error) {
+            showError(error, 'importFailed');
+        } finally {
+            markdownImportFileInput.value = '';
+        }
+    });
+
+    markdownImportCancel.addEventListener('click', closeMarkdownImport);
+    markdownImportModal.addEventListener('keydown', event => {
+        if (event.key === 'Escape') closeMarkdownImport();
+    });
+    markdownImportForm.addEventListener('submit', event => {
+        event.preventDefault();
+        const category = normalizeText(document.getElementById('markdown-category').value);
+        if (!category) {
+            document.getElementById('markdown-category').focus();
+            return;
+        }
+        try {
+            const subcategory = normalizeText(document.getElementById('markdown-subcategory').value);
+            const tags = document.getElementById('markdown-tags').value
+                .split(',')
+                .map(tag => tag.trim())
+                .filter(Boolean);
+            const dueDate = document.getElementById('markdown-due-date').value;
+            const replaceExisting = importModeSelect.value === 'replace';
+            if (replaceExisting && !confirm(t('confirmReplace'))) return;
+
+            const steps = StorageManager.createStepsFromMarkdown(
+                pendingMarkdown,
+                { category, subcategory, tags, dueDate },
+                () => createImportedStepId()
+            );
+            if (!steps.length) throw new Error(t('invalidBackup'));
+            StorageManager.importSteps(steps, replaceExisting);
+            if (editingStepId) stopEditing();
+            closeMarkdownImport();
+            renderSteps();
+            showStatus(t('markdownImported', { count: steps.length }));
+        } catch (error) {
+            showError(error, 'importFailed');
         }
     });
 
@@ -731,6 +828,37 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
+    function exportBackup(filename) {
+        const backup = {
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            steps: StorageManager.getSteps()
+        };
+        const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+
+    function createSafetyBackupFilename(category, subcategory) {
+        const sanitizeName = (value, fallback) => {
+            const sanitized = value
+                .normalize('NFKD')
+                .replace(/[^\w\u0370-\u03FF\s-]/g, '')
+                .trim()
+                .replace(/\s+/g, '-');
+            return sanitized || fallback;
+        };
+        const now = new Date();
+        const pad = value => String(value).padStart(2, '0');
+        const dateTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+        const categoryName = sanitizeName(category, 'all-categories');
+        const subcategoryName = sanitizeName(subcategory, 'all-subcategories');
+        return `${categoryName}-${subcategoryName}-${dateTime}.json`;
+    }
+
     function applyTranslations() {
         document.documentElement.lang = currentLanguage;
         document.title = t('pageTitle');
@@ -795,6 +923,12 @@ document.addEventListener('DOMContentLoaded', () => {
             ? window.crypto.randomUUID()
             : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
         return `step_${uniquePart}`;
+    }
+
+    function closeMarkdownImport() {
+        pendingMarkdown = '';
+        markdownImportModal.hidden = true;
+        markdownImportForm.reset();
     }
 
     function getStepTimestamp(id) {
