@@ -10,19 +10,24 @@ const StorageManager = {
             throw this.createStorageError('read', error);
         }
 
-        if (!data) return [];
+        if (data === null) return [];
 
         let steps;
         try {
             steps = JSON.parse(data);
         } catch (error) {
             const invalidDataError = new Error('Saved data is not valid JSON. Import a backup to recover your steps.');
+            invalidDataError.code = 'corruptData';
             invalidDataError.cause = error;
             throw invalidDataError;
         }
 
-        if (!Array.isArray(steps) || !steps.every(this.isValidStep)) {
-            throw new Error('Saved data has an invalid format. Import a valid backup to recover your steps.');
+        if (!Array.isArray(steps) ||
+            !steps.every(this.isValidStep) ||
+            new Set(steps.map(step => step.id)).size !== steps.length) {
+            const error = new Error('Saved data has an invalid format. Import a valid backup to recover your steps.');
+            error.code = 'corruptData';
+            throw error;
         }
         return steps;
     },
@@ -42,7 +47,9 @@ const StorageManager = {
         const stepIndex = steps.findIndex(step => step.id === stepId);
 
         if (stepIndex === -1) {
-            throw new Error('The step to update could not be found.');
+            const error = new Error('The step to update could not be found.');
+            error.code = 'stepNotFound';
+            throw error;
         }
 
         steps[stepIndex] = { ...steps[stepIndex], ...stepData, id: stepId };
@@ -62,6 +69,11 @@ const StorageManager = {
     },
 
     writeSteps(steps) {
+        if (!Array.isArray(steps) || !steps.every(this.isValidStep)) {
+            const error = new Error('A step contains invalid data and was not saved.');
+            error.code = 'invalidStep';
+            throw error;
+        }
         const sortedSteps = [...steps].sort((a, b) =>
             a.category.localeCompare(b.category) ||
             (a.subcategory || '').localeCompare(b.subcategory || '') ||
@@ -78,20 +90,27 @@ const StorageManager = {
     isValidStep(step) {
         return step &&
             typeof step.id === 'string' && step.id &&
-            typeof step.category === 'string' &&
-            typeof step.title === 'string' &&
-            typeof step.description === 'string' &&
-            Number.isFinite(Number(step.order)) && Number(step.order) >= 1 &&
-            (!step.subcategory || typeof step.subcategory === 'string') &&
-            (!step.image || (typeof step.image === 'string' && /^data:image\/[a-z0-9.+-]+;base64,/i.test(step.image))) &&
+            typeof step.category === 'string' && step.category.trim() &&
+            typeof step.title === 'string' && step.title.trim() &&
+            typeof step.description === 'string' && step.description.trim() &&
+            Number.isInteger(Number(step.order)) && Number(step.order) >= 1 &&
+            (step.subcategory === undefined || typeof step.subcategory === 'string') &&
+            (step.image === undefined || step.image === '' || (
+                typeof step.image === 'string' &&
+                /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/]+={0,2}$/i.test(step.image)
+            )) &&
             (step.completed === undefined || typeof step.completed === 'boolean');
     },
 
     createStorageError(operation, cause) {
+        const code = cause?.name === 'QuotaExceededError'
+            ? 'storageFull'
+            : operation === 'read' ? 'storageRead' : 'storageWrite';
         const message = cause?.name === 'QuotaExceededError'
             ? 'Browser storage is full. Export a backup and remove some images before saving more data.'
             : `Unable to ${operation} local data: ${cause?.message || 'browser storage is unavailable.'}`;
         const error = new Error(message);
+        error.code = code;
         error.cause = cause;
         return error;
     }

@@ -15,11 +15,169 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelEditButton = document.getElementById('cancel-edit');
     const statusMessage = document.getElementById('status-message');
     const submitButton = stepForm.querySelector('button[type="submit"]');
+    const languageSelect = document.getElementById('language-select');
     let editingStepId = null;
+    const translations = {
+        el: {
+            pageTitle: 'HowToApp - Οδηγός βημάτων και συμβουλών',
+            appDescription: 'Διαχειριστείτε τα βήματα και τις συμβουλές σας εύκολα και τοπικά',
+            languageLabel: 'Γλώσσα:',
+            categoryFilterLabel: 'Φίλτρο κατηγορίας',
+            subcategoryFilterLabel: 'Φίλτρο υποκατηγορίας',
+            sortLabel: 'Ταξινόμηση βημάτων',
+            stepListLabel: 'Αποτελέσματα βημάτων',
+            formTitle: 'Προσθήκη νέου βήματος',
+            formTitleEdit: 'Επεξεργασία βήματος',
+            categoryLabel: 'Κατηγορία:',
+            categoryPlaceholder: 'π.χ. Προγραμματισμός',
+            subcategoryLabel: 'Υποκατηγορία:',
+            subcategoryPlaceholder: 'π.χ. Git',
+            titleLabel: 'Τίτλος βήματος:',
+            titlePlaceholder: 'π.χ. Αρχικοποίηση αποθετηρίου',
+            orderLabel: 'Σειρά εκτέλεσης:',
+            descriptionLabel: 'Περιγραφή και οδηγίες:',
+            descriptionPlaceholder: 'Αναλυτική περιγραφή...',
+            imageLabel: 'Προαιρετική εικόνα:',
+            saveStep: 'Αποθήκευση βήματος',
+            updateStep: 'Ενημέρωση βήματος',
+            cancel: 'Ακύρωση',
+            listTitle: 'Λίστα βημάτων και συμβουλών',
+            searchLabel: 'Αναζήτηση βημάτων',
+            searchPlaceholder: 'Αναζήτηση βημάτων...',
+            allCategories: 'Όλες οι κατηγορίες',
+            allSubcategories: 'Όλες οι υποκατηγορίες',
+            sortCategory: 'Κατηγορία και σειρά',
+            sortStep: 'Σειρά βημάτων',
+            sortTitle: 'Τίτλος',
+            sortRecent: 'Νεότερα πρώτα',
+            exportBackup: 'Εξαγωγή αντιγράφου',
+            importBackup: 'Εισαγωγή αντιγράφου:',
+            importModeLabel: 'Συμπεριφορά εισαγωγής',
+            replaceAll: 'Αντικατάσταση όλων',
+            merge: 'Συγχώνευση',
+            emptyList: 'Δεν βρέθηκαν βήματα.',
+            stepLabel: 'Βήμα: {{order}}',
+            completed: 'Ολοκληρώθηκε',
+            markComplete: 'Σήμανση ως ολοκληρωμένο',
+            edit: 'Επεξεργασία',
+            delete: 'Διαγραφή',
+            imageAlt: 'Εικόνα βήματος',
+            confirmDelete: 'Θέλετε σίγουρα να διαγράψετε αυτό το βήμα;',
+            confirmReplace: 'Η εισαγωγή θα αντικαταστήσει όλα τα υπάρχοντα βήματα. Συνέχεια;',
+            stepSaved: 'Το βήμα αποθηκεύτηκε.',
+            stepDeleted: 'Το βήμα διαγράφηκε.',
+            backupExported: 'Το αντίγραφο ασφαλείας εξήχθη.',
+            importSuccess: 'Εισήχθησαν {{count}} βήματα.',
+            importFailed: 'Αποτυχία εισαγωγής: {{details}}',
+            invalidBackup: 'Το αρχείο δεν είναι έγκυρο αντίγραφο HowToApp.',
+            chooseImage: 'Επιλέξτε εικόνα PNG, JPEG ή WebP.',
+            imageTooLarge: 'Οι εικόνες πρέπει να είναι έως 5 MB.',
+            imageReadFailed: 'Δεν ήταν δυνατή η ανάγνωση της εικόνας.',
+            invalidImage: 'Το αρχείο δεν είναι έγκυρη εικόνα.',
+            imageDimensionsTooLarge: 'Οι διαστάσεις της εικόνας είναι υπερβολικά μεγάλες.',
+            optimizedImageTooLarge: 'Η εικόνα παραμένει μεγάλη· επιλέξτε μικρότερη.',
+            storageFull: 'Ο χώρος αποθήκευσης του browser γέμισε. Εξαγάγετε αντίγραφο και αφαιρέστε εικόνες.',
+            storageRead: 'Δεν ήταν δυνατή η ανάγνωση των τοπικών δεδομένων.',
+            storageWrite: 'Δεν ήταν δυνατή η αποθήκευση των τοπικών δεδομένων.',
+            corruptData: 'Τα αποθηκευμένα δεδομένα δεν είναι έγκυρα. Εισαγάγετε ένα έγκυρο αντίγραφο.',
+            invalidStep: 'Το βήμα περιέχει μη έγκυρα δεδομένα και δεν αποθηκεύτηκε.',
+            stepNotFound: 'Δεν βρέθηκε το βήμα προς ενημέρωση.',
+            genericError: 'Παρουσιάστηκε σφάλμα: {{details}}'
+        },
+        en: {
+            pageTitle: 'HowToApp - Step and tip guide',
+            appDescription: 'Manage your steps and tips easily and locally',
+            languageLabel: 'Language:',
+            categoryFilterLabel: 'Filter by category',
+            subcategoryFilterLabel: 'Filter by subcategory',
+            sortLabel: 'Sort steps',
+            stepListLabel: 'Step results',
+            formTitle: 'Add New Step',
+            formTitleEdit: 'Edit Step',
+            categoryLabel: 'Category:',
+            categoryPlaceholder: 'e.g. Programming',
+            subcategoryLabel: 'Subcategory:',
+            subcategoryPlaceholder: 'e.g. Git',
+            titleLabel: 'Step title:',
+            titlePlaceholder: 'e.g. Initialize a repository',
+            orderLabel: 'Execution order:',
+            descriptionLabel: 'Description and instructions:',
+            descriptionPlaceholder: 'Detailed description...',
+            imageLabel: 'Optional image:',
+            saveStep: 'Save Step',
+            updateStep: 'Update Step',
+            cancel: 'Cancel',
+            listTitle: 'Steps and Tips',
+            searchLabel: 'Search steps',
+            searchPlaceholder: 'Search steps...',
+            allCategories: 'All categories',
+            allSubcategories: 'All subcategories',
+            sortCategory: 'Category and order',
+            sortStep: 'Step order',
+            sortTitle: 'Title',
+            sortRecent: 'Newest first',
+            exportBackup: 'Export backup',
+            importBackup: 'Import backup:',
+            importModeLabel: 'Import behavior',
+            replaceAll: 'Replace all',
+            merge: 'Merge',
+            emptyList: 'No steps found.',
+            stepLabel: 'Step: {{order}}',
+            completed: 'Completed',
+            markComplete: 'Mark as complete',
+            edit: 'Edit',
+            delete: 'Delete',
+            imageAlt: 'Step image',
+            confirmDelete: 'Are you sure you want to delete this step?',
+            confirmReplace: 'This will replace all existing steps. Continue?',
+            stepSaved: 'Step saved.',
+            stepDeleted: 'Step deleted.',
+            backupExported: 'Backup exported.',
+            importSuccess: 'Imported {{count}} steps.',
+            importFailed: 'Import failed: {{details}}',
+            invalidBackup: 'The selected file is not a valid HowToApp backup.',
+            chooseImage: 'Choose a PNG, JPEG, or WebP image.',
+            imageTooLarge: 'Images must be 5 MB or smaller.',
+            imageReadFailed: 'Could not read the selected image.',
+            invalidImage: 'The selected file is not a valid image.',
+            imageDimensionsTooLarge: 'Image dimensions are too large.',
+            optimizedImageTooLarge: 'The optimized image is still too large. Choose a smaller image.',
+            storageFull: 'Browser storage is full. Export a backup and remove some images.',
+            storageRead: 'Unable to read local data.',
+            storageWrite: 'Unable to save local data.',
+            corruptData: 'Saved data is invalid. Import a valid backup to recover your steps.',
+            invalidStep: 'The step contains invalid data and was not saved.',
+            stepNotFound: 'The step to update could not be found.',
+            genericError: 'An error occurred: {{details}}'
+        }
+    };
+
+    let currentLanguage = 'el';
+    try {
+        currentLanguage = localStorage.getItem('howto_app_language') === 'en' ? 'en' : 'el';
+    } catch (error) {
+        showError(error);
+    }
+    languageSelect.value = currentLanguage;
+    applyTranslations();
 
     // Φόρτωση και εμφάνιση βημάτων κατά την εκκίνηση
     // Load and render steps on startup
     renderSteps();
+
+    languageSelect.addEventListener('change', () => {
+        currentLanguage = languageSelect.value;
+        let preferenceError = null;
+        try {
+            localStorage.setItem('howto_app_language', currentLanguage);
+        } catch (error) {
+            preferenceError = error;
+        }
+        applyTranslations();
+        showStatus('');
+        renderSteps();
+        if (preferenceError) showError(preferenceError);
+    });
 
     // Διαχείριση υποβολής φόρμας (Προσθήκη νέου βήματος)
     // Handle form submission (Add new step)
@@ -63,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     stepForm.reset();
                 }
                 renderSteps();
-                showStatus('Step saved. / Το βήμα αποθηκεύτηκε.');
+                showStatus(t('stepSaved'));
             } catch (error) {
                 showError(error);
             }
@@ -105,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
             link.download = `howtoapp-backup-${new Date().toISOString().slice(0, 10)}.json`;
             link.click();
             setTimeout(() => URL.revokeObjectURL(url), 0);
-            showStatus('Backup exported. / Το αντίγραφο ασφαλείας εξήχθη.');
+            showStatus(t('backupExported'));
         } catch (error) {
             showError(error);
         }
@@ -119,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const parsed = JSON.parse(await file.text());
             const records = Array.isArray(parsed) ? parsed : parsed?.version === 1 ? parsed.steps : null;
             if (!Array.isArray(records) || !records.every(isValidImportedStep)) {
-                throw new Error('The selected file is not a valid HowToApp backup.');
+                throw new Error(t('invalidBackup'));
             }
 
             const normalizedSteps = records.map(step => ({
@@ -133,15 +291,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 completed: Boolean(step.completed)
             }));
             const replaceExisting = importModeSelect.value === 'replace';
-            if (replaceExisting && !confirm('This will replace all existing steps. Continue? / Η εισαγωγή θα αντικαταστήσει όλα τα υπάρχοντα βήματα. Συνέχεια;')) {
+            if (replaceExisting && !confirm(t('confirmReplace'))) {
                 return;
             }
 
             StorageManager.importSteps(normalizedSteps, replaceExisting);
+            if (editingStepId) stopEditing();
             renderSteps();
-            showStatus(`Imported ${normalizedSteps.length} steps. / Εισήχθησαν ${normalizedSteps.length} βήματα.`);
+            showStatus(t('importSuccess', { count: normalizedSteps.length }));
         } catch (error) {
-            showError(new Error(`Import failed: ${error.message} / Αποτυχία εισαγωγής.`));
+            showError(error, 'importFailed');
         } finally {
             importFileInput.value = '';
         }
@@ -164,14 +323,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('title').value = step.title;
                 document.getElementById('step-order').value = step.order;
                 document.getElementById('description').value = step.description;
-                submitButton.textContent = 'Ενημέρωση Βήματος / Update Step';
+                submitButton.textContent = t('updateStep');
+                document.getElementById('form-heading').textContent = t('formTitleEdit');
                 cancelEditButton.hidden = false;
                 document.getElementById('title').focus();
             } else if (button.dataset.action === 'delete' &&
-                confirm('Είστε σίγουρος ότι θέλετε να διαγράψετε αυτό το βήμα; / Are you sure you want to delete this step?')) {
+                confirm(t('confirmDelete'))) {
                 StorageManager.deleteStep(step.id);
+                if (editingStepId === step.id) stopEditing();
                 renderSteps();
-                showStatus('Step deleted. / Το βήμα διαγράφηκε.');
+                showStatus(t('stepDeleted'));
             }
         } catch (error) {
             showError(error);
@@ -196,7 +357,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function stopEditing() {
         editingStepId = null;
         stepForm.reset();
-        submitButton.textContent = 'Αποθήκευση Βήματος / Save Step';
+        document.getElementById('form-heading').textContent = t('formTitle');
+        submitButton.textContent = t('saveStep');
         cancelEditButton.hidden = true;
     }
 
@@ -239,7 +401,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (filteredSteps.length === 0) {
-            stepsContainer.innerHTML = '<p class="no-steps">Δεν βρέθηκαν βήματα. / No steps found.</p>';
+            const emptyMessage = document.createElement('p');
+            emptyMessage.className = 'no-steps';
+            emptyMessage.textContent = t('emptyList');
+            stepsContainer.appendChild(emptyMessage);
             return;
         }
 
@@ -265,18 +430,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="badge" style="background: #e0e7ff; color: #4f46e5; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">${escapeHtml(step.category)}</span>
                         ${step.subcategory ? `<span class="badge" style="background: #f3f4f6; color: #374151; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; margin-left: 5px;">${escapeHtml(step.subcategory)}</span>` : ''}
                     </div>
-                    <span class="step-num" style="font-weight: bold; color: #6b7280;">Βήμα / Step: ${step.order}</span>
+                    <span class="step-num" style="font-weight: bold; color: #6b7280;">${escapeHtml(t('stepLabel', { order: step.order }))}</span>
                 </div>
                 <label class="completion-control">
                     <input type="checkbox" data-action="toggle-complete" data-id="${escapeHtml(step.id)}" ${step.completed ? 'checked' : ''}>
-                    <span>${step.completed ? 'Ολοκληρώθηκε / Completed' : 'Σήμανση ως ολοκληρωμένο / Mark as complete'}</span>
+                    <span>${escapeHtml(t(step.completed ? 'completed' : 'markComplete'))}</span>
                 </label>
                 <h3 style="margin: 5px 0 10px 0; font-size: 1.1rem;">${escapeHtml(step.title)}</h3>
                 <p style="white-space: pre-line; color: #4b5563; font-size: 0.95rem;">${escapeHtml(step.description)}</p>
-                ${step.image ? `<div class="step-img-container" style="margin-top: 10px;"><img src="${step.image}" alt="Step image" style="max-width: 100%; max-height: 200px; border-radius: 4px;"></div>` : ''}
+                ${step.image ? `<div class="step-img-container" style="margin-top: 10px;"><img src="${escapeHtml(step.image)}" alt="${escapeHtml(t('imageAlt'))}" style="max-width: 100%; max-height: 200px; border-radius: 4px;"></div>` : ''}
                 <div class="step-actions">
-                    <button type="button" data-action="edit" data-id="${escapeHtml(step.id)}" class="btn-secondary">Επεξεργασία / Edit</button>
-                    <button type="button" data-action="delete" data-id="${escapeHtml(step.id)}" class="btn-danger">Διαγραφή / Delete</button>
+                    <button type="button" data-action="edit" data-id="${escapeHtml(step.id)}" class="btn-secondary">${escapeHtml(t('edit'))}</button>
+                    <button type="button" data-action="delete" data-id="${escapeHtml(step.id)}" class="btn-danger">${escapeHtml(t('delete'))}</button>
                 </div>
             `;
 
@@ -287,12 +452,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateFilterOptions(steps) {
         const selectedCategory = categoryFilter.value;
         const categories = [...new Set(steps.map(step => step.category))].sort((a, b) => a.localeCompare(b));
-        categoryFilter.innerHTML = '<option value="">Όλες οι κατηγορίες / All categories</option>';
+        categoryFilter.replaceChildren(createOption('', t('allCategories')));
         categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category;
-            option.textContent = category;
-            categoryFilter.appendChild(option);
+            categoryFilter.appendChild(createOption(category, category));
         });
         categoryFilter.value = categories.includes(selectedCategory) ? selectedCategory : '';
 
@@ -301,12 +463,9 @@ document.addEventListener('DOMContentLoaded', () => {
             .filter(step => !categoryFilter.value || step.category === categoryFilter.value)
             .map(step => step.subcategory)
             .filter(Boolean))].sort((a, b) => a.localeCompare(b));
-        subcategoryFilter.innerHTML = '<option value="">Όλες οι υποκατηγορίες / All subcategories</option>';
+        subcategoryFilter.replaceChildren(createOption('', t('allSubcategories')));
         subcategories.forEach(subcategory => {
-            const option = document.createElement('option');
-            option.value = subcategory;
-            option.textContent = subcategory;
-            subcategoryFilter.appendChild(option);
+            subcategoryFilter.appendChild(createOption(subcategory, subcategory));
         });
         subcategoryFilter.disabled = subcategories.length === 0;
         subcategoryFilter.value = subcategories.includes(selectedSubcategory) ? selectedSubcategory : '';
@@ -323,30 +482,61 @@ document.addEventListener('DOMContentLoaded', () => {
             (!step.image || (
                 typeof step.image === 'string' &&
                 step.image.length <= 1_500_000 &&
-                /^data:image\/(?:png|jpeg|webp);base64,/i.test(step.image)
+                /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/]+={0,2}$/i.test(step.image)
             )) &&
             (step.id === undefined || typeof step.id === 'string') &&
             (step.completed === undefined || typeof step.completed === 'boolean');
     }
 
+    function createOption(value, label) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        return option;
+    }
+
+    function t(key, values = {}) {
+        return Object.entries(values).reduce(
+            (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+            translations[currentLanguage][key] || key
+        );
+    }
+
+    function applyTranslations() {
+        document.documentElement.lang = currentLanguage;
+        document.title = t('pageTitle');
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            element.textContent = t(element.dataset.i18n);
+        });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+            element.placeholder = t(element.dataset.i18nPlaceholder);
+        });
+        document.querySelectorAll('[data-i18n-aria-label]').forEach(element => {
+            element.setAttribute('aria-label', t(element.dataset.i18nAriaLabel));
+        });
+        languageSelect.setAttribute('aria-label', t('languageLabel'));
+        document.getElementById('form-heading').textContent = t(editingStepId ? 'formTitleEdit' : 'formTitle');
+        submitButton.textContent = t(editingStepId ? 'updateStep' : 'saveStep');
+    }
+
     function readAndCompressImage(file) {
         const supportedTypes = ['image/png', 'image/jpeg', 'image/webp'];
         if (!supportedTypes.includes(file.type)) {
-            return Promise.reject(new Error('Choose a PNG, JPEG, or WebP image. / Επιλέξτε εικόνα PNG, JPEG ή WebP.'));
+            return Promise.reject(new Error(t('chooseImage')));
         }
         if (file.size > 5 * 1024 * 1024) {
-            return Promise.reject(new Error('Images must be 5 MB or smaller. / Οι εικόνες πρέπει να είναι έως 5 MB.'));
+            return Promise.reject(new Error(t('imageTooLarge')));
         }
 
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onerror = () => reject(new Error('Could not read the selected image. / Δεν ήταν δυνατή η ανάγνωση της εικόνας.'));
+            reader.onerror = () => reject(new Error(t('imageReadFailed')));
             reader.onload = () => {
                 const image = new Image();
-                image.onerror = () => reject(new Error('The selected file is not a valid image. / Το αρχείο δεν είναι έγκυρη εικόνα.'));
+                image.onerror = () => reject(new Error(t('invalidImage')));
                 image.onload = () => {
                     if (image.width * image.height > 40_000_000) {
-                        reject(new Error('Image dimensions are too large. / Οι διαστάσεις της εικόνας είναι υπερβολικά μεγάλες.'));
+                        reject(new Error(t('imageDimensionsTooLarge')));
                         return;
                     }
 
@@ -358,7 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
                         const imageData = canvas.toDataURL(file.type, 0.82);
                         if (imageData.length > 1_500_000) {
-                            throw new Error('The optimized image is still too large. Choose a smaller image. / Η εικόνα παραμένει μεγάλη· επιλέξτε μικρότερη.');
+                            throw new Error(t('optimizedImageTooLarge'));
                         }
                         resolve(imageData);
                     } catch (error) {
@@ -388,8 +578,12 @@ document.addEventListener('DOMContentLoaded', () => {
         statusMessage.classList.remove('is-error');
     }
 
-    function showError(error) {
-        statusMessage.textContent = error.message;
+    function showError(error, messageKey = null) {
+        statusMessage.textContent = messageKey
+            ? t(messageKey, { details: error.message })
+            : error.code && translations[currentLanguage][error.code]
+            ? t(error.code)
+            : t('genericError', { details: error.message });
         statusMessage.hidden = false;
         statusMessage.classList.add('is-error');
     }

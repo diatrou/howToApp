@@ -24,10 +24,16 @@
         <!-- Application header -->
         <header>
             <h1>HowToApp</h1>
-            <p>Διαχειριστείτε τα βήματα και τις συμβουλές σας εύκολα και τοπικά</p>
-            <p>Manage your steps and tips easily and locally</p>
+            <p data-i18n="appDescription">Διαχειριστείτε τα βήματα και τις συμβουλές σας εύκολα και τοπικά</p>
+            <div class="language-control">
+                <label for="language-select" data-i18n="languageLabel">Γλώσσα / Language:</label>
+                <select id="language-select">
+                    <option value="el">Ελληνικά</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
         </header>
-        <p id="status-message" class="status-message" role="status" hidden></p>
+        <p id="status-message" class="status-message" role="status" aria-live="polite" aria-atomic="true" hidden></p>
 
         <!-- Κύριος κορμός με φόρμα και λίστα προβολής -->
         <!-- Main body with form and view list -->
@@ -35,96 +41,95 @@
             
             <!-- Στήλη φόρμας καταχώρισης -->
             <!-- Form column for entries -->
-            <section class="card form-section">
-                <h2>Προσθήκη Νέου Βήματος</h2>
-                <h2>Add New Step</h2>
+            <section class="card form-section" aria-labelledby="form-heading">
+                <h2 id="form-heading" data-i18n="formTitle">Προσθήκη Νέου Βήματος</h2>
                 
                 <form id="step-form">
                     <!-- Επιλογή κατηγορίας -->
                     <!-- Category selection -->
                     <div class="form-group">
-                        <label for="category">Κατηγορία / Category:</label>
-                        <input type="text" id="category" required placeholder="π.χ. Προγραμματισμός / e.g. Programming">
+                        <label for="category" data-i18n="categoryLabel">Κατηγορία:</label>
+                        <input type="text" id="category" required placeholder="π.χ. Προγραμματισμός" data-i18n-placeholder="categoryPlaceholder">
                     </div>
 
                     <!-- Επιλογή υποκατηγορίας -->
                     <!-- Subcategory selection -->
                     <div class="form-group">
-                        <label for="subcategory">Υποκατηγορία / Subcategory:</label>
-                        <input type="text" id="subcategory" placeholder="π.χ. Git / e.g. Git">
+                        <label for="subcategory" data-i18n="subcategoryLabel">Υποκατηγορία:</label>
+                        <input type="text" id="subcategory" placeholder="π.χ. Git" data-i18n-placeholder="subcategoryPlaceholder">
                     </div>
 
                     <!-- Τίτλος βήματος/συμβουλής -->
                     <!-- Step/Tip title -->
                     <div class="form-group">
-                        <label for="title">Τίτλος Βήματος / Step Title:</label>
-                        <input type="text" id="title" required placeholder="π.χ. Αρχικοποίηση αποθετηρίου">
+                        <label for="title" data-i18n="titleLabel">Τίτλος βήματος:</label>
+                        <input type="text" id="title" required placeholder="π.χ. Αρχικοποίηση αποθετηρίου" data-i18n-placeholder="titlePlaceholder">
                     </div>
 
                     <!-- Σειρά εκτέλεσης -->
                     <!-- Execution order -->
                     <div class="form-group">
-                        <label for="step-order">Σειρά Εκτέλεσης / Execution Order:</label>
+                        <label for="step-order" data-i18n="orderLabel">Σειρά εκτέλεσης:</label>
                         <input type="number" id="step-order" min="1" value="1" required>
                     </div>
 
                     <!-- Περιγραφή / Οδηγίες -->
                     <!-- Description / Instructions -->
                     <div class="form-group">
-                        <label for="description">Περιγραφή & Οδηγίες / Description & Instructions:</label>
-                        <textarea id="description" rows="4" required placeholder="Αναλυτική περιγραφή..."></textarea>
+                        <label for="description" data-i18n="descriptionLabel">Περιγραφή και οδηγίες:</label>
+                        <textarea id="description" rows="4" required placeholder="Αναλυτική περιγραφή..." data-i18n-placeholder="descriptionPlaceholder"></textarea>
                     </div>
 
                     <!-- Προαιρετική εικόνα -->
                     <!-- Optional image -->
                     <div class="form-group">
-                        <label for="step-image">Προαιρετική Εικόνα / Optional Image:</label>
+                        <label for="step-image" data-i18n="imageLabel">Προαιρετική εικόνα:</label>
                         <input type="file" id="step-image" accept="image/png,image/jpeg,image/webp">
                     </div>
 
                     <!-- Κουμπί υποβολής -->
                     <!-- Submit button -->
-                    <button type="submit" class="btn-primary">Αποθήκευση Βήματος / Save Step</button>
-                    <button type="button" id="cancel-edit" class="btn-secondary" hidden>Ακύρωση / Cancel</button>
+                    <button type="submit" class="btn-primary" data-i18n="saveStep">Αποθήκευση βήματος</button>
+                    <button type="button" id="cancel-edit" class="btn-secondary" data-i18n="cancel" hidden>Ακύρωση</button>
                 </form>
             </section>
 
             <!-- Στήλη προβολής καταχωρίσεων -->
             <!-- Display column for entries -->
-            <section class="card display-section">
-                <h2>Λίστα Βημάτων & Συμβουλών</h2>
-                <h2>Steps & Tips List</h2>
+            <section class="card display-section" aria-labelledby="list-heading">
+                <h2 id="list-heading" data-i18n="listTitle">Λίστα βημάτων και συμβουλών</h2>
                 
                 <!-- Περιοχή φίλτρων αναζήτησης -->
                 <!-- Search filter area -->
                 <div class="filter-group">
-                    <input type="text" id="search-input" placeholder="Αναζήτηση βημάτων... / Search steps...">
-                    <select id="category-filter">
-                        <option value="">Όλες οι κατηγορίες / All categories</option>
+                    <label class="sr-only" for="search-input" data-i18n="searchLabel">Αναζήτηση βημάτων</label>
+                    <input type="search" id="search-input" placeholder="Αναζήτηση βημάτων..." data-i18n-placeholder="searchPlaceholder">
+                    <select id="category-filter" data-i18n-aria-label="categoryFilterLabel">
+                        <option value="" data-i18n="allCategories">Όλες οι κατηγορίες</option>
                     </select>
-                    <select id="subcategory-filter" disabled>
-                        <option value="">Όλες οι υποκατηγορίες / All subcategories</option>
+                    <select id="subcategory-filter" data-i18n-aria-label="subcategoryFilterLabel" disabled>
+                        <option value="" data-i18n="allSubcategories">Όλες οι υποκατηγορίες</option>
                     </select>
-                    <select id="sort-select">
-                        <option value="category">Κατηγορία και σειρά / Category and order</option>
-                        <option value="step">Σειρά βημάτων / Step order</option>
-                        <option value="title">Τίτλος / Title</option>
-                        <option value="recent">Νεότερα πρώτα / Newest first</option>
+                    <select id="sort-select" data-i18n-aria-label="sortLabel">
+                        <option value="category" data-i18n="sortCategory">Κατηγορία και σειρά</option>
+                        <option value="step" data-i18n="sortStep">Σειρά βημάτων</option>
+                        <option value="title" data-i18n="sortTitle">Τίτλος</option>
+                        <option value="recent" data-i18n="sortRecent">Νεότερα πρώτα</option>
                     </select>
                 </div>
                 <div class="data-actions">
-                    <button type="button" id="export-steps" class="btn-secondary">Εξαγωγή αντιγράφου / Export backup</button>
-                    <label for="import-file">Εισαγωγή αντιγράφου / Import backup:</label>
+                    <button type="button" id="export-steps" class="btn-secondary" data-i18n="exportBackup">Εξαγωγή αντιγράφου</button>
+                    <label for="import-file" data-i18n="importBackup">Εισαγωγή αντιγράφου:</label>
                     <input type="file" id="import-file" accept="application/json,.json">
-                    <select id="import-mode" aria-label="Import behavior">
-                        <option value="replace">Αντικατάσταση όλων / Replace all</option>
-                        <option value="merge">Συγχώνευση / Merge</option>
+                    <select id="import-mode" aria-label="Συμπεριφορά εισαγωγής" data-i18n-aria-label="importModeLabel">
+                        <option value="replace" data-i18n="replaceAll">Αντικατάσταση όλων</option>
+                        <option value="merge" data-i18n="merge">Συγχώνευση</option>
                     </select>
                 </div>
 
                 <!-- Δυναμική λίστα βημάτων -->
                 <!-- Dynamic steps list container -->
-                <div id="steps-container" class="steps-list">
+                <div id="steps-container" class="steps-list" role="region" data-i18n-aria-label="stepListLabel">
                     <!-- Τα στοιχεία θα φορτώνονται δυναμικά μέσω JavaScript -->
                     <!-- Items will be loaded dynamically via JavaScript -->
                 </div>
