@@ -155,6 +155,29 @@ header p {
     margin-top: 10px;
 }
 
+.completion-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0;
+    cursor: pointer;
+}
+
+.completion-control input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+}
+
+.step-card.is-complete {
+    border-left: 4px solid #16a34a;
+    opacity: 0.78;
+}
+
+.step-card.is-complete h3 {
+    text-decoration: line-through;
+}
+
 /* Περιοχή φίλτρων και λίστας */
 /* Filter and list area */
 .filter-group {

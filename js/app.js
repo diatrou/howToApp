@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 StorageManager.updateStep(editingStepId, stepData);
                 stopEditing();
             } else {
-                StorageManager.saveStep(stepData);
+                StorageManager.saveStep({ ...stepData, completed: false });
                 stepForm.reset();
             }
             renderSteps();
@@ -104,6 +104,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (button.dataset.action === 'delete') {
             deleteStepItem(step.id);
         }
+    });
+
+    stepsContainer.addEventListener('change', (event) => {
+        const checkbox = event.target.closest('input[data-action="toggle-complete"]');
+        if (!checkbox) return;
+
+        const step = StorageManager.getSteps().find(item => item.id === checkbox.dataset.id);
+        if (!step) return;
+        StorageManager.updateStep(step.id, { completed: checkbox.checked });
+        renderSteps();
     });
 
     function stopEditing() {
@@ -160,6 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const stepCard = document.createElement('div');
             stepCard.className = 'step-card card';
+            if (step.completed) stepCard.classList.add('is-complete');
             stepCard.style.marginBottom = '15px';
 
             stepCard.innerHTML = `
@@ -170,6 +181,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <span class="step-num" style="font-weight: bold; color: #6b7280;">Βήμα / Step: ${step.order}</span>
                 </div>
+                <label class="completion-control">
+                    <input type="checkbox" data-action="toggle-complete" data-id="${escapeHtml(step.id)}" ${step.completed ? 'checked' : ''}>
+                    <span>${step.completed ? 'Ολοκληρώθηκε / Completed' : 'Σήμανση ως ολοκληρωμένο / Mark as complete'}</span>
+                </label>
                 <h3 style="margin: 5px 0 10px 0; font-size: 1.1rem;">${escapeHtml(step.title)}</h3>
                 <p style="white-space: pre-line; color: #4b5563; font-size: 0.95rem;">${escapeHtml(step.description)}</p>
                 ${step.image ? `<div class="step-img-container" style="margin-top: 10px;"><img src="${step.image}" alt="Step image" style="max-width: 100%; max-height: 200px; border-radius: 4px;"></div>` : ''}
