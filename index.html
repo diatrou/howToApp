@@ -98,6 +98,18 @@
                 <!-- Search filter area -->
                 <div class="filter-group">
                     <input type="text" id="search-input" placeholder="Αναζήτηση βημάτων... / Search steps...">
+                    <select id="category-filter">
+                        <option value="">Όλες οι κατηγορίες / All categories</option>
+                    </select>
+                    <select id="subcategory-filter" disabled>
+                        <option value="">Όλες οι υποκατηγορίες / All subcategories</option>
+                    </select>
+                    <select id="sort-select">
+                        <option value="category">Κατηγορία και σειρά / Category and order</option>
+                        <option value="step">Σειρά βημάτων / Step order</option>
+                        <option value="title">Τίτλος / Title</option>
+                        <option value="recent">Νεότερα πρώτα / Newest first</option>
+                    </select>
                 </div>
 
                 <!-- Δυναμική λίστα βημάτων -->

@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const stepForm = document.getElementById('step-form');
     const stepsContainer = document.getElementById('steps-container');
     const searchInput = document.getElementById('search-input');
+    const categoryFilter = document.getElementById('category-filter');
+    const subcategoryFilter = document.getElementById('subcategory-filter');
+    const sortSelect = document.getElementById('sort-select');
     const cancelEditButton = document.getElementById('cancel-edit');
     const submitButton = stepForm.querySelector('button[type="submit"]');
     let editingStepId = null;
@@ -69,8 +72,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Διαχείριση αναζήτησης/φιλτραρίσματος
     // Handle search/filtering
     searchInput.addEventListener('input', (e) => {
-        renderSteps(e.target.value);
+        renderSteps();
     });
+
+    categoryFilter.addEventListener('change', () => {
+        subcategoryFilter.value = '';
+        renderSteps();
+    });
+    subcategoryFilter.addEventListener('change', renderSteps);
+    sortSelect.addEventListener('change', renderSteps);
 
     cancelEditButton.addEventListener('click', stopEditing);
 
@@ -105,18 +115,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Συνάρτηση προβολής βημάτων στην οθόνη
     // Function to render steps on the screen
-    function renderSteps(filterText = '') {
+    function renderSteps() {
         const steps = StorageManager.getSteps();
         stepsContainer.innerHTML = '';
+        updateFilterOptions(steps);
+        const searchText = searchInput.value.trim().toLocaleLowerCase();
 
-        // Φιλτράρισμα βάσει κειμένου αναζήτησης
-        // Filter based on search text
         const filteredSteps = steps.filter(step => {
-            const searchText = filterText.toLowerCase();
-            return step.title.toLowerCase().includes(searchText) ||
-                   step.category.toLowerCase().includes(searchText) ||
-                   (step.subcategory && step.subcategory.toLowerCase().includes(searchText)) ||
-                   step.description.toLowerCase().includes(searchText);
+            const matchesSearch = [
+                step.title, step.category, step.subcategory || '', step.description
+            ].some(value => value.toLocaleLowerCase().includes(searchText));
+            return matchesSearch &&
+                (!categoryFilter.value || step.category === categoryFilter.value) &&
+                (!subcategoryFilter.value || step.subcategory === subcategoryFilter.value);
+        });
+
+        const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+        filteredSteps.sort((a, b) => {
+            if (sortSelect.value === 'step') {
+                return Number(a.order) - Number(b.order) || collator.compare(a.title, b.title);
+            }
+            if (sortSelect.value === 'title') return collator.compare(a.title, b.title);
+            if (sortSelect.value === 'recent') return Number(b.id.replace('step_', '')) - Number(a.id.replace('step_', ''));
+            return collator.compare(a.category, b.category) ||
+                collator.compare(a.subcategory || '', b.subcategory || '') ||
+                Number(a.order) - Number(b.order);
         });
 
         if (filteredSteps.length === 0) {
@@ -126,7 +149,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Δημιουργία HTML για κάθε βήμα
         // Create HTML for each step
+        let previousCategory = null;
         filteredSteps.forEach(step => {
+            if (sortSelect.value === 'category' && step.category !== previousCategory) {
+                const heading = document.createElement('h3');
+                heading.className = 'category-heading';
+                heading.textContent = step.category;
+                stepsContainer.appendChild(heading);
+                previousCategory = step.category;
+            }
             const stepCard = document.createElement('div');
             stepCard.className = 'step-card card';
             stepCard.style.marginBottom = '15px';
@@ -150,6 +181,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
             stepsContainer.appendChild(stepCard);
         });
+    }
+
+    function updateFilterOptions(steps) {
+        const selectedCategory = categoryFilter.value;
+        const categories = [...new Set(steps.map(step => step.category))].sort((a, b) => a.localeCompare(b));
+        categoryFilter.innerHTML = '<option value="">Όλες οι κατηγορίες / All categories</option>';
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            categoryFilter.appendChild(option);
+        });
+        categoryFilter.value = categories.includes(selectedCategory) ? selectedCategory : '';
+
+        const selectedSubcategory = subcategoryFilter.value;
+        const subcategories = [...new Set(steps
+            .filter(step => !categoryFilter.value || step.category === categoryFilter.value)
+            .map(step => step.subcategory)
+            .filter(Boolean))].sort((a, b) => a.localeCompare(b));
+        subcategoryFilter.innerHTML = '<option value="">Όλες οι υποκατηγορίες / All subcategories</option>';
+        subcategories.forEach(subcategory => {
+            const option = document.createElement('option');
+            option.value = subcategory;
+            option.textContent = subcategory;
+            subcategoryFilter.appendChild(option);
+        });
+        subcategoryFilter.disabled = subcategories.length === 0;
+        subcategoryFilter.value = subcategories.includes(selectedSubcategory) ? selectedSubcategory : '';
     }
 });
 
