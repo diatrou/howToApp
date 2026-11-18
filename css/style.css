@@ -129,6 +129,32 @@ header p {
     background-color: var(--primary-hover);
 }
 
+.btn-secondary,
+.btn-danger {
+    border: 0;
+    border-radius: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font: inherit;
+}
+
+.btn-secondary {
+    background: #e5e7eb;
+    color: #1f2937;
+}
+
+.btn-danger {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.step-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+}
+
 /* Περιοχή φίλτρων και λίστας */
 /* Filter and list area */
 .filter-group {

@@ -39,6 +39,24 @@ const StorageManager = {
         return steps;
     },
 
+    updateStep(stepId, stepData) {
+        const steps = this.getSteps();
+        const stepIndex = steps.findIndex(step => step.id === stepId);
+
+        if (stepIndex === -1) {
+            throw new Error('The step to update could not be found.');
+        }
+
+        steps[stepIndex] = { ...steps[stepIndex], ...stepData, id: stepId };
+        steps.sort((a, b) => {
+            if (a.category !== b.category) return a.category.localeCompare(b.category);
+            if (a.subcategory !== b.subcategory) return (a.subcategory || '').localeCompare(b.subcategory || '');
+            return Number(a.order) - Number(b.order);
+        });
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(steps));
+        return steps;
+    },
+
     // Διαγραφή βήματος βάσει ID
     // Delete step by ID
     deleteStep(stepId) {
