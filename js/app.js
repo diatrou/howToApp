@@ -328,6 +328,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.key === 'ArrowLeft') movePresentation(-1);
         if (event.key === 'ArrowRight') movePresentation(1);
     });
+    window.addEventListener('resize', () => {
+        if (!presentationModal.hidden) fitPresentationToScreen();
+    });
 
     exportButton.addEventListener('click', () => {
         try {
@@ -598,7 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span>${escapeHtml(t(step.completed ? 'completed' : 'markComplete'))}</span>
                 </label>
                 <h3 style="margin: 5px 0 10px 0; font-size: 1.1rem;">${escapeHtml(step.title)}</h3>
-                <p style="white-space: pre-line; color: #4b5563; font-size: 0.95rem;">${escapeHtml(step.description)}</p>
+                <div class="markdown-content step-markdown">${renderMarkdown(step.description)}</div>
                 ${(step.tags || []).length ? `<div class="tag-list">${step.tags.map(tag => `<span class="tag-badge">${escapeHtml(tag)}</span>`).join('')}</div>` : ''}
                 ${step.dueDate ? `<p class="due-date ${getDueDateClass(step.dueDate, step.completed)}">${escapeHtml(getDueDateLabel(step.dueDate, step.completed))}: ${escapeHtml(step.dueDate)}</p>` : ''}
                 ${step.image ? `<div class="step-img-container" style="margin-top: 10px;"><img src="${escapeHtml(step.image)}" alt="${escapeHtml(t('imageAlt'))}" style="max-width: 100%; max-height: 200px; border-radius: 4px;"></div>` : ''}
@@ -817,11 +820,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function movePresentation(delta) {
-        presentationIndex = Math.max(
+        const nextIndex = Math.max(
             0,
             Math.min(presentationSteps.length - 1, presentationIndex + delta)
         );
-        renderPresentation();
+        if (nextIndex === presentationIndex) return;
+
+        const slide = presentationModal.querySelector('.presentation-slide');
+        slide.classList.remove('slide-enter');
+        slide.classList.add('slide-leave');
+        window.setTimeout(() => {
+            presentationIndex = nextIndex;
+            renderPresentation();
+            slide.classList.remove('slide-leave');
+            slide.classList.add('slide-enter');
+            window.setTimeout(() => slide.classList.remove('slide-enter'), 320);
+        }, 180);
     }
 
     function renderPresentation() {
@@ -832,12 +846,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('presentation-category').textContent =
             [step.category, step.subcategory].filter(Boolean).join(' / ');
         document.getElementById('presentation-title').textContent = step.title;
-        document.getElementById('presentation-description').textContent = step.description;
+        document.getElementById('presentation-description').innerHTML = renderMarkdown(step.description);
         const image = document.getElementById('presentation-image');
         if (step.image) {
             image.src = step.image;
             image.alt = t('imageAlt');
             image.hidden = false;
+            image.onload = fitPresentationToScreen;
         } else {
             image.removeAttribute('src');
             image.hidden = true;
@@ -845,6 +860,32 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('presentation-prev').disabled = presentationIndex === 0;
         document.getElementById('presentation-next').disabled =
             presentationIndex === presentationSteps.length - 1;
+        window.requestAnimationFrame(fitPresentationToScreen);
+    }
+
+    function fitPresentationToScreen() {
+        const slide = presentationModal.querySelector('.presentation-slide');
+        const title = document.getElementById('presentation-title');
+        const description = document.getElementById('presentation-description');
+        if (!slide || presentationModal.hidden) return;
+
+        const mobile = window.innerWidth < 700;
+        let titleSize = mobile ? 40 : 72;
+        let bodySize = mobile ? 19 : 28;
+        title.style.fontSize = `${titleSize}px`;
+        description.style.fontSize = `${bodySize}px`;
+
+        for (let attempt = 0; attempt < 18; attempt += 1) {
+            if (slide.scrollHeight <= slide.clientHeight && slide.scrollWidth <= slide.clientWidth) break;
+            if (titleSize > (mobile ? 26 : 36)) {
+                titleSize -= mobile ? 2 : 3;
+                title.style.fontSize = `${titleSize}px`;
+            }
+            if (bodySize > (mobile ? 14 : 18)) {
+                bodySize -= 1;
+                description.style.fontSize = `${bodySize}px`;
+            }
+        }
     }
 
     function getDueDateClass(dueDate, completed) {
@@ -884,9 +925,119 @@ document.addEventListener('DOMContentLoaded', () => {
 // Simple security against XSS (HTML escaping)
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, "&amp;")
+    return String(str).replace(/&/g, "&amp;")
               .replace(/</g, "&lt;")
               .replace(/>/g, "&gt;")
               .replace(/"/g, "&quot;")
               .replace(/'/g, "&#039;");
+}
+
+function renderInlineMarkdown(text) {
+    let html = escapeHtml(text);
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+    return html;
+}
+
+function renderMarkdown(markdown) {
+    if (!markdown) return '';
+    const lines = String(markdown).replace(/\r\n?/g, '\n').split('\n');
+    let html = '';
+    let paragraph = [];
+    let listType = null;
+
+    const flushParagraph = () => {
+        if (paragraph.length) {
+            html += `<p>${paragraph.map(renderInlineMarkdown).join('<br>')}</p>`;
+            paragraph = [];
+        }
+    };
+    const closeList = () => {
+        if (listType) {
+            html += `</${listType}>`;
+            listType = null;
+        }
+    };
+
+    for (let index = 0; index < lines.length; index += 1) {
+        const line = lines[index];
+        if (/^```/.test(line)) {
+            flushParagraph();
+            closeList();
+            const language = line.slice(3).trim();
+            const code = [];
+            index += 1;
+            while (index < lines.length && !/^```/.test(lines[index])) {
+                code.push(lines[index]);
+                index += 1;
+            }
+            html += `<pre><code${language ? ` class="language-${escapeHtml(language)}"` : ''}>${escapeHtml(code.join('\n'))}</code></pre>`;
+            continue;
+        }
+
+        if (!line.trim()) {
+            flushParagraph();
+            closeList();
+            continue;
+        }
+
+        const heading = line.match(/^(#{1,6})\s+(.+)$/);
+        if (heading) {
+            flushParagraph();
+            closeList();
+            const level = heading[1].length;
+            html += `<h${level}>${renderInlineMarkdown(heading[2])}</h${level}>`;
+            continue;
+        }
+
+        if (/^([-*_])(?:\s*\1){2,}\s*$/.test(line)) {
+            flushParagraph();
+            closeList();
+            html += '<hr>';
+            continue;
+        }
+
+        const unordered = line.match(/^\s*[-*+]\s+(.+)$/);
+        if (unordered) {
+            flushParagraph();
+            if (listType !== 'ul') {
+                closeList();
+                html += '<ul>';
+                listType = 'ul';
+            }
+            html += `<li>${renderInlineMarkdown(unordered[1])}</li>`;
+            continue;
+        }
+
+        const ordered = line.match(/^\s*\d+[.)]\s+(.+)$/);
+        if (ordered) {
+            flushParagraph();
+            if (listType !== 'ol') {
+                closeList();
+                html += '<ol>';
+                listType = 'ol';
+            }
+            html += `<li>${renderInlineMarkdown(ordered[1])}</li>`;
+            continue;
+        }
+
+        const quote = line.match(/^>\s?(.+)$/);
+        if (quote) {
+            flushParagraph();
+            closeList();
+            html += `<blockquote>${renderInlineMarkdown(quote[1])}</blockquote>`;
+            continue;
+        }
+
+        closeList();
+        paragraph.push(line);
+    }
+
+    flushParagraph();
+    closeList();
+    return html;
 }
