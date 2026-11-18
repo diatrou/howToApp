@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <!-- Ορισμός χαρακτήρων και responsive προσαρμογής -->
+    <!-- Define character set and responsive viewport -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Τίτλος εφαρμογής -->
+    <!-- Application title -->
+    <title>HowToApp - Οδηγός Βημάτων & Συμβουλών</title>
+    
+    <!-- Σύνδεση με το εξωτερικό stylesheet -->
+    <!-- Link to external stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Κεντρικό περιτύπωμα εφαρμογής -->
+    <!-- Main application container -->
+    <div class="app-container">
+        
+        <!-- Επικεφαλίδα εφαρμογής -->
+        <!-- Application header -->
+        <header>
+            <h1>HowToApp</h1>
+            <p>Διαχειριστείτε τα βήματα και τις συμβουλές σας εύκολα και τοπικά</p>
+            <p>Manage your steps and tips easily and locally</p>
+        </header>
+
+        <!-- Κύριος κορμός με φόρμα και λίστα προβολής -->
+        <!-- Main body with form and view list -->
+        <main class="grid-layout">
+            
+            <!-- Στήλη φόρμας καταχώρισης -->
+            <!-- Form column for entries -->
+            <section class="card form-section">
+                <h2>Προσθήκη Νέου Βήματος</h2>
+                <h2>Add New Step</h2>
+                
+                <form id="step-form">
+                    <!-- Επιλογή κατηγορίας -->
+                    <!-- Category selection -->
+                    <div class="form-group">
+                        <label for="category">Κατηγορία / Category:</label>
+                        <input type="text" id="category" required placeholder="π.χ. Προγραμματισμός / e.g. Programming">
+                    </div>
+
+                    <!-- Επιλογή υποκατηγορίας -->
+                    <!-- Subcategory selection -->
+                    <div class="form-group">
+                        <label for="subcategory">Υποκατηγορία / Subcategory:</label>
+                        <input type="text" id="subcategory" placeholder="π.χ. Git / e.g. Git">
+                    </div>
+
+                    <!-- Τίτλος βήματος/συμβουλής -->
+                    <!-- Step/Tip title -->
+                    <div class="form-group">
+                        <label for="title">Τίτλος Βήματος / Step Title:</label>
+                        <input type="text" id="title" required placeholder="π.χ. Αρχικοποίηση αποθετηρίου">
+                    </div>
+
+                    <!-- Σειρά εκτέλεσης -->
+                    <!-- Execution order -->
+                    <div class="form-group">
+                        <label for="step-order">Σειρά Εκτέλεσης / Execution Order:</label>
+                        <input type="number" id="step-order" min="1" value="1" required>
+                    </div>
+
+                    <!-- Περιγραφή / Οδηγίες -->
+                    <!-- Description / Instructions -->
+                    <div class="form-group">
+                        <label for="description">Περιγραφή & Οδηγίες / Description & Instructions:</label>
+                        <textarea id="description" rows="4" required placeholder="Αναλυτική περιγραφή..."></textarea>
+                    </div>
+
+                    <!-- Προαιρετική εικόνα -->
+                    <!-- Optional image -->
+                    <div class="form-group">
+                        <label for="step-image">Προαιρετική Εικόνα / Optional Image:</label>
+                        <input type="file" id="step-image" accept="image/*">
+                    </div>
+
+                    <!-- Κουμπί υποβολής -->
+                    <!-- Submit button -->
+                    <button type="submit" class="btn-primary">Αποθήκευση Βήματος / Save Step</button>
+                </form>
+            </section>
+
+            <!-- Στήλη προβολής καταχωρίσεων -->
+            <!-- Display column for entries -->
+            <section class="card display-section">
+                <h2>Λίστα Βημάτων & Συμβουλών</h2>
+                <h2>Steps & Tips List</h2>
+                
+                <!-- Περιοχή φίλτρων αναζήτησης -->
+                <!-- Search filter area -->
+                <div class="filter-group">
+                    <input type="text" id="search-input" placeholder="Αναζήτηση βημάτων... / Search steps...">
+                </div>
+
+                <!-- Δυναμική λίστα βημάτων -->
+                <!-- Dynamic steps list container -->
+                <div id="steps-container" class="steps-list">
+                    <!-- Τα στοιχεία θα φορτώνονται δυναμικά μέσω JavaScript -->
+                    <!-- Items will be loaded dynamically via JavaScript -->
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Σύνδεση με τα αρχεία JavaScript -->
+    <!-- Link to JavaScript files -->
+    <script src="js/storage.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

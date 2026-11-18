@@ -1,0 +1,8 @@
+# Αρχεία λειτουργικού συστήματος / OS files
+.DS_Store
+Thumbs.db
+
+# Αρχεία επεξεργαστή κειμένου / Editor files
+.vscode/
+*.sublime-workspace
+*.sublime-project
