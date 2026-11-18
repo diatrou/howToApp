@@ -1,42 +1,40 @@
-// Διαχείριση τοπικής αποθήκευσης δεδομένων (LocalStorage)
 // Local storage data management
 const StorageManager = {
-    // Κλειδί αποθήκευσης στη μνήμη του browser
-    // Storage key in browser memory
     STORAGE_KEY: 'howto_app_steps',
 
-    // Ανάκτητη όλων των αποθηκευμένων βημάτων
-    // Retrieve all saved steps
     getSteps() {
-        // Ανάκτηση δεδομένων από το LocalStorage ή επιστροφή κενής λίστας
-        // Get data from LocalStorage or return empty list
-        const data = localStorage.getItem(this.STORAGE_KEY);
-        return data ? JSON.parse(data) : [];
+        let data;
+        try {
+            data = localStorage.getItem(this.STORAGE_KEY);
+        } catch (error) {
+            throw this.createStorageError('read', error);
+        }
+
+        if (!data) return [];
+
+        let steps;
+        try {
+            steps = JSON.parse(data);
+        } catch (error) {
+            const invalidDataError = new Error('Saved data is not valid JSON. Import a backup to recover your steps.');
+            invalidDataError.cause = error;
+            throw invalidDataError;
+        }
+
+        if (!Array.isArray(steps) || !steps.every(this.isValidStep)) {
+            throw new Error('Saved data has an invalid format. Import a valid backup to recover your steps.');
+        }
+        return steps;
     },
 
-    // Αποθήκευση νέου βήματος στη λίστα
-    // Save new step to the list
     saveStep(stepData) {
         const steps = this.getSteps();
-        
-        // Προσθήκη μοναδικού ID και timestamp βάσει χρόνου
-        // Add unique ID and timestamp based on time
-        stepData.id = 'step_' + Date.now();
-        
-        steps.push(stepData);
-        
-        // Ταξινόμηση ανά κατηγορία, υποκατηγορία και σειρά εκτέλεσης
-        // Sort by category, subcategory and execution order
-        steps.sort((a, b) => {
-            if (a.category !== b.category) return a.category.localeCompare(b.category);
-            if (a.subcategory !== b.subcategory) return (a.subcategory || '').localeCompare(b.subcategory || '');
-            return Number(a.order) - Number(b.order);
-        });
-
-        // Αποθήκευση στο LocalStorage
-        // Save to LocalStorage
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(steps));
-        return steps;
+        const newStep = {
+            ...stepData,
+            id: `step_${Date.now()}_${Math.random().toString(36).slice(2)}`
+        };
+        steps.push(newStep);
+        return this.writeSteps(steps);
     },
 
     updateStep(stepId, stepData) {
@@ -48,35 +46,53 @@ const StorageManager = {
         }
 
         steps[stepIndex] = { ...steps[stepIndex], ...stepData, id: stepId };
-        steps.sort((a, b) => {
-            if (a.category !== b.category) return a.category.localeCompare(b.category);
-            if (a.subcategory !== b.subcategory) return (a.subcategory || '').localeCompare(b.subcategory || '');
-            return Number(a.order) - Number(b.order);
-        });
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(steps));
-        return steps;
+        return this.writeSteps(steps);
     },
 
     importSteps(importedSteps, replaceExisting) {
         const existingSteps = replaceExisting ? [] : this.getSteps();
         const stepsById = new Map(existingSteps.map(step => [step.id, step]));
         importedSteps.forEach(step => stepsById.set(step.id, step));
-        const steps = [...stepsById.values()];
-        steps.sort((a, b) => {
-            if (a.category !== b.category) return a.category.localeCompare(b.category);
-            if (a.subcategory !== b.subcategory) return (a.subcategory || '').localeCompare(b.subcategory || '');
-            return Number(a.order) - Number(b.order);
-        });
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(steps));
-        return steps;
+        return this.writeSteps([...stepsById.values()]);
     },
 
-    // Διαγραφή βήματος βάσει ID
-    // Delete step by ID
     deleteStep(stepId) {
-        let steps = this.getSteps();
-        steps = steps.filter(step => step.id !== stepId);
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(steps));
-        return steps;
+        const steps = this.getSteps().filter(step => step.id !== stepId);
+        return this.writeSteps(steps);
+    },
+
+    writeSteps(steps) {
+        const sortedSteps = [...steps].sort((a, b) =>
+            a.category.localeCompare(b.category) ||
+            (a.subcategory || '').localeCompare(b.subcategory || '') ||
+            Number(a.order) - Number(b.order)
+        );
+        try {
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(sortedSteps));
+        } catch (error) {
+            throw this.createStorageError('write', error);
+        }
+        return sortedSteps;
+    },
+
+    isValidStep(step) {
+        return step &&
+            typeof step.id === 'string' && step.id &&
+            typeof step.category === 'string' &&
+            typeof step.title === 'string' &&
+            typeof step.description === 'string' &&
+            Number.isFinite(Number(step.order)) && Number(step.order) >= 1 &&
+            (!step.subcategory || typeof step.subcategory === 'string') &&
+            (!step.image || (typeof step.image === 'string' && /^data:image\/[a-z0-9.+-]+;base64,/i.test(step.image))) &&
+            (step.completed === undefined || typeof step.completed === 'boolean');
+    },
+
+    createStorageError(operation, cause) {
+        const message = cause?.name === 'QuotaExceededError'
+            ? 'Browser storage is full. Export a backup and remove some images before saving more data.'
+            : `Unable to ${operation} local data: ${cause?.message || 'browser storage is unavailable.'}`;
+        const error = new Error(message);
+        error.cause = cause;
+        return error;
     }
 };

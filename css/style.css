@@ -187,6 +187,18 @@ header p {
     gap: 8px;
 }
 
+.status-message {
+    padding: 10px 14px;
+    border-radius: 4px;
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-message.is-error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
 .filter-group input,
 .filter-group select {
     width: 100%;

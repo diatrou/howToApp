@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const importModeSelect = document.getElementById('import-mode');
     const exportButton = document.getElementById('export-steps');
     const cancelEditButton = document.getElementById('cancel-edit');
+    const statusMessage = document.getElementById('status-message');
     const submitButton = stepForm.querySelector('button[type="submit"]');
     let editingStepId = null;
 
@@ -33,12 +34,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const order = document.getElementById('step-order').value;
         const description = document.getElementById('description').value.trim();
         const imageInput = document.getElementById('step-image');
-        const existingStep = editingStepId
-            ? StorageManager.getSteps().find(step => step.id === editingStepId)
-            : null;
+        let existingStep;
+        try {
+            existingStep = editingStepId
+                ? StorageManager.getSteps().find(step => step.id === editingStepId)
+                : null;
+        } catch (error) {
+            showError(error);
+            return;
+        }
 
-        // Συνάρτηση μετατροπής εικόνας σε Base64 για τοπική αποθήκευση
-        // Function to convert image to Base64 for local storage
         const processAndSave = (imageUrl = existingStep?.image || '') => {
             const stepData = {
                 category,
@@ -49,24 +54,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 image: imageUrl
             };
 
-            if (editingStepId) {
-                StorageManager.updateStep(editingStepId, stepData);
-                stopEditing();
-            } else {
-                StorageManager.saveStep({ ...stepData, completed: false });
-                stepForm.reset();
+            try {
+                if (editingStepId) {
+                    StorageManager.updateStep(editingStepId, stepData);
+                    stopEditing();
+                } else {
+                    StorageManager.saveStep({ ...stepData, completed: false });
+                    stepForm.reset();
+                }
+                renderSteps();
+                showStatus('Step saved. / Το βήμα αποθηκεύτηκε.');
+            } catch (error) {
+                showError(error);
             }
-            renderSteps();
         };
 
-        // Έλεγχος αν έχει επιλεγεί εικόνα
-        // Check if an image has been selected
         if (imageInput.files && imageInput.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                processAndSave(event.target.result);
-            };
-            reader.readAsDataURL(imageInput.files[0]);
+            readAndCompressImage(imageInput.files[0])
+                .then(processAndSave)
+                .catch(error => {
+                    imageInput.value = '';
+                    showError(error);
+                });
         } else {
             processAndSave();
         }
@@ -74,9 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Διαχείριση αναζήτησης/φιλτραρίσματος
     // Handle search/filtering
-    searchInput.addEventListener('input', (e) => {
-        renderSteps();
-    });
+    searchInput.addEventListener('input', renderSteps);
 
     categoryFilter.addEventListener('change', () => {
         subcategoryFilter.value = '';
@@ -86,17 +93,22 @@ document.addEventListener('DOMContentLoaded', () => {
     sortSelect.addEventListener('change', renderSteps);
 
     exportButton.addEventListener('click', () => {
-        const backup = {
-            version: 1,
-            exportedAt: new Date().toISOString(),
-            steps: StorageManager.getSteps()
-        };
-        const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `howtoapp-backup-${new Date().toISOString().slice(0, 10)}.json`;
-        link.click();
-        URL.revokeObjectURL(url);
+        try {
+            const backup = {
+                version: 1,
+                exportedAt: new Date().toISOString(),
+                steps: StorageManager.getSteps()
+            };
+            const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `howtoapp-backup-${new Date().toISOString().slice(0, 10)}.json`;
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 0);
+            showStatus('Backup exported. / Το αντίγραφο ασφαλείας εξήχθη.');
+        } catch (error) {
+            showError(error);
+        }
     });
 
     importFileInput.addEventListener('change', async () => {
@@ -127,9 +139,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             StorageManager.importSteps(normalizedSteps, replaceExisting);
             renderSteps();
-            alert(`Imported ${normalizedSteps.length} steps. / Εισήχθησαν ${normalizedSteps.length} βήματα.`);
+            showStatus(`Imported ${normalizedSteps.length} steps. / Εισήχθησαν ${normalizedSteps.length} βήματα.`);
         } catch (error) {
-            alert(`Import failed: ${error.message} / Αποτυχία εισαγωγής.`);
+            showError(new Error(`Import failed: ${error.message} / Αποτυχία εισαγωγής.`));
         } finally {
             importFileInput.value = '';
         }
@@ -141,21 +153,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const button = event.target.closest('button[data-action]');
         if (!button) return;
 
-        const step = StorageManager.getSteps().find(item => item.id === button.dataset.id);
-        if (!step) return;
+        try {
+            const step = StorageManager.getSteps().find(item => item.id === button.dataset.id);
+            if (!step) return;
 
-        if (button.dataset.action === 'edit') {
-            editingStepId = step.id;
-            document.getElementById('category').value = step.category;
-            document.getElementById('subcategory').value = step.subcategory || '';
-            document.getElementById('title').value = step.title;
-            document.getElementById('step-order').value = step.order;
-            document.getElementById('description').value = step.description;
-            submitButton.textContent = 'Ενημέρωση Βήματος / Update Step';
-            cancelEditButton.hidden = false;
-            document.getElementById('title').focus();
-        } else if (button.dataset.action === 'delete') {
-            deleteStepItem(step.id);
+            if (button.dataset.action === 'edit') {
+                editingStepId = step.id;
+                document.getElementById('category').value = step.category;
+                document.getElementById('subcategory').value = step.subcategory || '';
+                document.getElementById('title').value = step.title;
+                document.getElementById('step-order').value = step.order;
+                document.getElementById('description').value = step.description;
+                submitButton.textContent = 'Ενημέρωση Βήματος / Update Step';
+                cancelEditButton.hidden = false;
+                document.getElementById('title').focus();
+            } else if (button.dataset.action === 'delete' &&
+                confirm('Είστε σίγουρος ότι θέλετε να διαγράψετε αυτό το βήμα; / Are you sure you want to delete this step?')) {
+                StorageManager.deleteStep(step.id);
+                renderSteps();
+                showStatus('Step deleted. / Το βήμα διαγράφηκε.');
+            }
+        } catch (error) {
+            showError(error);
         }
     });
 
@@ -163,10 +182,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const checkbox = event.target.closest('input[data-action="toggle-complete"]');
         if (!checkbox) return;
 
-        const step = StorageManager.getSteps().find(item => item.id === checkbox.dataset.id);
-        if (!step) return;
-        StorageManager.updateStep(step.id, { completed: checkbox.checked });
-        renderSteps();
+        try {
+            const step = StorageManager.getSteps().find(item => item.id === checkbox.dataset.id);
+            if (!step) return;
+            StorageManager.updateStep(step.id, { completed: checkbox.checked });
+            renderSteps();
+        } catch (error) {
+            showError(error);
+            renderSteps();
+        }
     });
 
     function stopEditing() {
@@ -179,8 +203,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Συνάρτηση προβολής βημάτων στην οθόνη
     // Function to render steps on the screen
     function renderSteps() {
-        const steps = StorageManager.getSteps();
         stepsContainer.innerHTML = '';
+        try {
+            renderSavedSteps();
+        } catch (error) {
+            stepsContainer.innerHTML = '';
+            showError(error);
+        }
+    }
+
+    function renderSavedSteps() {
+        const steps = StorageManager.getSteps();
         updateFilterOptions(steps);
         const searchText = searchInput.value.trim().toLocaleLowerCase();
 
@@ -199,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return Number(a.order) - Number(b.order) || collator.compare(a.title, b.title);
             }
             if (sortSelect.value === 'title') return collator.compare(a.title, b.title);
-            if (sortSelect.value === 'recent') return Number(b.id.replace('step_', '')) - Number(a.id.replace('step_', ''));
+            if (sortSelect.value === 'recent') return getStepTimestamp(b.id) - getStepTimestamp(a.id);
             return collator.compare(a.category, b.category) ||
                 collator.compare(a.subcategory || '', b.subcategory || '') ||
                 Number(a.order) - Number(b.order);
@@ -287,9 +320,55 @@ document.addEventListener('DOMContentLoaded', () => {
             Number.isFinite(Number(step.order)) && Number(step.order) >= 1 &&
             Number.isInteger(Number(step.order)) &&
             (!step.subcategory || typeof step.subcategory === 'string') &&
-            (!step.image || typeof step.image === 'string') &&
+            (!step.image || (
+                typeof step.image === 'string' &&
+                step.image.length <= 1_500_000 &&
+                /^data:image\/(?:png|jpeg|webp);base64,/i.test(step.image)
+            )) &&
             (step.id === undefined || typeof step.id === 'string') &&
             (step.completed === undefined || typeof step.completed === 'boolean');
+    }
+
+    function readAndCompressImage(file) {
+        const supportedTypes = ['image/png', 'image/jpeg', 'image/webp'];
+        if (!supportedTypes.includes(file.type)) {
+            return Promise.reject(new Error('Choose a PNG, JPEG, or WebP image. / Επιλέξτε εικόνα PNG, JPEG ή WebP.'));
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            return Promise.reject(new Error('Images must be 5 MB or smaller. / Οι εικόνες πρέπει να είναι έως 5 MB.'));
+        }
+
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(new Error('Could not read the selected image. / Δεν ήταν δυνατή η ανάγνωση της εικόνας.'));
+            reader.onload = () => {
+                const image = new Image();
+                image.onerror = () => reject(new Error('The selected file is not a valid image. / Το αρχείο δεν είναι έγκυρη εικόνα.'));
+                image.onload = () => {
+                    if (image.width * image.height > 40_000_000) {
+                        reject(new Error('Image dimensions are too large. / Οι διαστάσεις της εικόνας είναι υπερβολικά μεγάλες.'));
+                        return;
+                    }
+
+                    try {
+                        const scale = Math.min(1, 1200 / Math.max(image.width, image.height));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.max(1, Math.round(image.width * scale));
+                        canvas.height = Math.max(1, Math.round(image.height * scale));
+                        canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+                        const imageData = canvas.toDataURL(file.type, 0.82);
+                        if (imageData.length > 1_500_000) {
+                            throw new Error('The optimized image is still too large. Choose a smaller image. / Η εικόνα παραμένει μεγάλη· επιλέξτε μικρότερη.');
+                        }
+                        resolve(imageData);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                image.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        });
     }
 
     function createImportedStepId() {
@@ -298,16 +377,23 @@ document.addEventListener('DOMContentLoaded', () => {
             : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
         return `step_${uniquePart}`;
     }
-});
 
-// Καθολική συνάρτηση διαγραφής βήματος
-// Global function to delete a step
-window.deleteStepItem = function(id) {
-    if (confirm('Είστε σίγουρος ότι θέλετε να διαγράψετε αυτό το βήμα; / Are you sure you want to delete this step?')) {
-        StorageManager.deleteStep(id);
-        document.getElementById('search-input').dispatchEvent(new Event('input'));
+    function getStepTimestamp(id) {
+        return Number(id.match(/^step_(\d+)/)?.[1]) || 0;
     }
-};
+
+    function showStatus(message) {
+        statusMessage.textContent = message;
+        statusMessage.hidden = !message;
+        statusMessage.classList.remove('is-error');
+    }
+
+    function showError(error) {
+        statusMessage.textContent = error.message;
+        statusMessage.hidden = false;
+        statusMessage.classList.add('is-error');
+    }
+});
 
 // Απλή ασφάλεια έναντι XSS (HTML escaping)
 // Simple security against XSS (HTML escaping)
