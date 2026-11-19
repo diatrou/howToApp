@@ -159,17 +159,34 @@
                     </select>
                 </div>
                 <div class="data-actions">
-                    <button type="button" id="export-steps" class="btn-secondary" data-i18n="exportBackup">Εξαγωγή αντιγράφου</button>
-                    <button type="button" id="delete-all-steps" class="btn-danger" data-i18n="deleteAllSteps">Διαγραφή όλων των βημάτων</button>
-                    <button type="button" id="present-steps" class="btn-primary compact-button" data-i18n="presentSteps">Παρουσίαση</button>
-                    <label for="import-file" data-i18n="importBackup">Εισαγωγή αντιγράφου:</label>
-                    <input type="file" id="import-file" accept="application/json,.json">
-                    <label for="import-md-file" data-i18n="importMarkdown">Εισαγωγή Markdown:</label>
-                    <input type="file" id="import-md-file" accept="text/markdown,.md,text/plain,.txt">
-                    <select id="import-mode" aria-label="Συμπεριφορά εισαγωγής" data-i18n-aria-label="importModeLabel">
-                        <option value="replace" data-i18n="replaceAll">Αντικατάσταση όλων</option>
-                        <option value="merge" data-i18n="merge">Συγχώνευση</option>
-                    </select>
+                    <section class="data-action-group" aria-labelledby="data-actions-title">
+                        <h3 id="data-actions-title" data-i18n="dataActionsTitle">Ενέργειες βημάτων</h3>
+                        <div class="data-action-buttons">
+                            <button type="button" id="export-steps" class="btn-secondary" data-i18n="exportBackup">Εξαγωγή αντιγράφου</button>
+                            <button type="button" id="delete-all-steps" class="btn-danger" data-i18n="deleteAllSteps">Διαγραφή όλων των βημάτων</button>
+                            <button type="button" id="present-steps" class="btn-primary compact-button" data-i18n="presentSteps">Παρουσίαση</button>
+                        </div>
+                    </section>
+                    <section class="data-action-group" aria-labelledby="import-files-title">
+                        <h3 id="import-files-title" data-i18n="importFilesTitle">Εισαγωγή αρχείων</h3>
+                        <div class="import-file-controls">
+                            <div class="import-file-control">
+                                <label for="import-file" data-i18n="importBackup">Εισαγωγή αντιγράφου:</label>
+                                <input type="file" id="import-file" accept="application/json,.json">
+                            </div>
+                            <div class="import-file-control">
+                                <label for="import-md-file" data-i18n="importMarkdown">Εισαγωγή Markdown:</label>
+                                <input type="file" id="import-md-file" accept="text/markdown,.md,text/plain,.txt">
+                            </div>
+                            <div class="import-mode-control">
+                                <label for="import-mode" data-i18n="importModeLabel">Συμπεριφορά εισαγωγής</label>
+                                <select id="import-mode" aria-label="Συμπεριφορά εισαγωγής" data-i18n-aria-label="importModeLabel">
+                                    <option value="replace" data-i18n="replaceAll">Αντικατάσταση όλων</option>
+                                    <option value="merge" data-i18n="merge">Συγχώνευση</option>
+                                </select>
+                            </div>
+                        </div>
+                    </section>
                 </div>
 
                 <!-- Δυναμική λίστα βημάτων -->
