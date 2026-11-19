@@ -120,6 +120,26 @@ test('restores a deleted step at its original position without duplicate numberi
     );
 });
 
+test('inserts a step at the selected position and shifts only its group', () => {
+    installStorage({
+        howto_app_steps: JSON.stringify([
+            validStep({ id: 'git_1', title: 'First', subcategory: 'Git', order: 1 }),
+            validStep({ id: 'git_2', title: 'Last', subcategory: 'Git', order: 2 }),
+            validStep({ id: 'testing_1', subcategory: 'Testing', order: 1 })
+        ])
+    });
+
+    StorageManager.insertStep(
+        validStep({ id: 'git_new', title: 'Inserted', subcategory: 'Git', order: 2 })
+    );
+    const steps = StorageManager.getSteps();
+    assert.deepEqual(
+        steps.filter(step => step.subcategory === 'Git').map(step => [step.title, step.order]),
+        [['First', 1], ['Inserted', 2], ['Last', 3]]
+    );
+    assert.equal(steps.find(step => step.id === 'testing_1').order, 1);
+});
+
 test('deletes all steps when no scope is selected', () => {
     installStorage({
         howto_app_steps: JSON.stringify([

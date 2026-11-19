@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             titleLabel: 'Τίτλος βήματος:',
             titlePlaceholder: 'π.χ. Αρχικοποίηση αποθετηρίου',
             orderLabel: 'Σειρά εκτέλεσης:',
+            orderHint: 'Για νέο βήμα, επιλέξτε τη θέση του· τα επόμενα βήματα θα μετακινηθούν.',
             descriptionLabel: 'Περιγραφή και οδηγίες:',
             descriptionPlaceholder: 'Αναλυτική περιγραφή...',
             imageLabel: 'Προαιρετική εικόνα:',
@@ -166,6 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
             titleLabel: 'Step title:',
             titlePlaceholder: 'e.g. Initialize a repository',
             orderLabel: 'Execution order:',
+            orderHint: 'For a new step, choose its position; later steps will shift down.',
             descriptionLabel: 'Description and instructions:',
             descriptionPlaceholder: 'Detailed description...',
             imageLabel: 'Optional image:',
@@ -316,12 +318,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     StorageManager.updateStep(editingStepId, stepData);
                     stopEditing();
                 } else {
-                    StorageManager.saveStep({ ...stepData, completed: false });
+                    const groupSize = StorageManager.getSteps().filter(step =>
+                        step.category === category && (step.subcategory || '') === subcategory
+                    ).length;
+                    const insertionOrder = Math.min(Number(order), groupSize + 1);
+                    StorageManager.insertStep({
+                        ...stepData,
+                        order: insertionOrder,
+                        completed: false
+                    });
                     preservedImage = imageUrl;
                     document.getElementById('category').value = category;
                     document.getElementById('subcategory').value = subcategory;
                     document.getElementById('title').value = title;
-                    document.getElementById('step-order').value = Number(order) + 1;
+                    document.getElementById('step-order').value = insertionOrder + 1;
                     document.getElementById('description').value = '';
                     document.getElementById('tags').value = tags.join(', ');
                     document.getElementById('due-date').value = dueDate;

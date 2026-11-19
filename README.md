@@ -6,7 +6,7 @@
 
 Ανοίξτε το `index.html` σε σύγχρονο browser. Για σταθερή συμπεριφορά αποθήκευσης, ειδικά όταν το `file://` περιορίζεται από τον browser, σερβίρετε το φάκελο μέσω ενός τοπικού static server.
 
-Μπορείτε να προσθέσετε και να επεξεργαστείτε βήματα, να τα σημειώσετε ως ολοκληρωμένα, να αναζητήσετε/φιλτράρετε ανά κατηγορία και υποκατηγορία, και να αλλάξετε τη σειρά εμφάνισης. Η γλώσσα επιλέγεται από την επικεφαλίδα και αποθηκεύεται στον ίδιο browser.
+Μπορείτε να προσθέσετε και να επεξεργαστείτε βήματα, να τα σημειώσετε ως ολοκληρωμένα, να αναζητήσετε/φιλτράρετε ανά κατηγορία και υποκατηγορία, και να αλλάξετε τη σειρά εμφάνισης. Κατά την προσθήκη, η σειρά εκτέλεσης ορίζει τη θέση του βήματος· τα επόμενα βήματα στην ίδια κατηγορία και υποκατηγορία μετακινούνται αυτόματα. Όταν διαγράφετε βήμα, η αρίθμηση της συγκεκριμένης ομάδας συμπτύσσεται χωρίς κενά. Η γλώσσα επιλέγεται από την επικεφαλίδα και αποθηκεύεται στον ίδιο browser.
 
 Το περιεχόμενο μπορεί επίσης να οργανωθεί με ετικέτες και ημερομηνίες ολοκλήρωσης, να ταξινομηθεί με μεταφορά στοιχείων και να εμφανιστεί σε προβολή παρουσίασης βήμα προς βήμα. Οι περιγραφές αναγνωρίζουν Markdown για τίτλους, λίστες, έμφαση, συνδέσους, εισαγωγικά και μπλοκ κώδικα· η παρουσίαση έχει ομαλή εναλλαγή διαφανειών και προσαρμόζει αυτόματα τα μεγέθη γραμματοσειράς ώστε να μη χρησιμοποιείται κύλιση. Μη αποθηκευμένα προσχέδια ανακτώνται κατά την επόμενη φόρτωση. Η διαγραφή υποστηρίζει σύντομη αναίρεση.
 Με το κουμπί «Διαγραφή όλων των βημάτων» γίνεται αυτόματη εξαγωγή αντιγράφου ασφαλείας και επιβεβαιωμένη διαγραφή όλων των βημάτων ή μόνο της επιλεγμένης κατηγορίας/υποκατηγορίας. Το όνομα του αρχείου ασφαλείας περιλαμβάνει την κατηγορία, την υποκατηγορία και την τοπική ημερομηνία και ώρα.
@@ -26,7 +26,7 @@ HowToApp is a local web application for organizing instructions and steps. It us
 
 Open `index.html` in a modern browser. For consistent persistence—particularly when the browser restricts storage on `file://` URLs—serve the folder with a local static server.
 
-Create and edit steps, mark them complete, search and filter by category/subcategory, and choose a sort order. Select Greek or English in the header; the preference is saved in the current browser.
+Create and edit steps, mark them complete, search and filter by category/subcategory, and choose a sort order. When adding a step, its execution order determines its position; later steps in the same category and subcategory shift automatically. Deleting a step compacts that group's numbering without gaps. Select Greek or English in the header; the preference is saved in the current browser.
 
 Export downloads a JSON backup. Import can replace existing steps (after confirmation) or merge by step ID. Markdown import creates one step per text block separated by a blank line: the first line becomes the title and any remaining lines become description paragraphs. PNG, JPEG, and WebP images are limited to 5 MB before processing, resized to at most 1200 px, and stored in LocalStorage. Storage capacity varies by browser. Data stays in the current browser profile and is not synchronized, so keep regular backups.
 
