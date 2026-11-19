@@ -96,9 +96,9 @@ test('deletes all steps when no scope is selected', () => {
     assert.deepEqual(StorageManager.getSteps(), []);
 });
 
-test('creates one ordered step for each Markdown line', () => {
+test('creates one ordered step for each blank-line-delimited Markdown block', () => {
     const steps = StorageManager.createStepsFromMarkdown(
-        '# First step\n\n- Second step\n3. Third step',
+        '# First step\nFirst paragraph.\nSecond paragraph.\n\n- Second step\nDetails.',
         {
             category: 'Programming',
             subcategory: 'Git',
@@ -108,9 +108,11 @@ test('creates one ordered step for each Markdown line', () => {
         index => `step_${index + 1}`
     );
 
-    assert.equal(steps.length, 3);
-    assert.deepEqual(steps.map(step => step.order), [1, 2, 3]);
-    assert.deepEqual(steps.map(step => step.title), ['First step', 'Second step', 'Third step']);
+    assert.equal(steps.length, 2);
+    assert.deepEqual(steps.map(step => step.order), [1, 2]);
+    assert.deepEqual(steps.map(step => step.title), ['First step', 'Second step']);
+    assert.equal(steps[0].description, 'First paragraph.\n\nSecond paragraph.');
+    assert.equal(steps[1].description, 'Details.');
     assert.equal(steps[0].category, 'Programming');
     assert.equal(steps[0].subcategory, 'Git');
     assert.deepEqual(steps[0].tags, ['work', 'guide']);

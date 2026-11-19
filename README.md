@@ -16,7 +16,7 @@
 ## Αντίγραφα ασφαλείας και εικόνες
 
 - **Εξαγωγή αντιγράφου** κατεβάζει αρχείο JSON. Η εισαγωγή μπορεί είτε να αντικαταστήσει τα υπάρχοντα βήματα (με επιβεβαίωση) είτε να τα συγχωνεύσει με βάση το ID.
-- **Εισαγωγή Markdown** δημιουργεί ένα βήμα για κάθε μη κενή γραμμή του αρχείου. Κατά την εισαγωγή ζητούνται κατηγορία, υποκατηγορία, ετικέτες και ημερομηνία, οι οποίες εφαρμόζονται σε όλα τα βήματα· η σειρά ξεκινά από 1.
+- **Εισαγωγή Markdown** δημιουργεί ένα βήμα για κάθε ομάδα κειμένου που χωρίζεται από κενή γραμμή. Η πρώτη γραμμή κάθε ομάδας γίνεται τίτλος, οι υπόλοιπες γραμμές γίνονται παράγραφοι περιγραφής. Κατά την εισαγωγή ζητούνται κατηγορία, υποκατηγορία, ετικέτες και ημερομηνία, οι οποίες εφαρμόζονται σε όλα τα βήματα· η σειρά ξεκινά από 1.
 - Οι εικόνες PNG, JPEG και WebP περιορίζονται σε 5 MB πριν από τη φόρτωση, αλλάζουν μέγεθος έως 1200 px και αποθηκεύονται στο LocalStorage. Ο διαθέσιμος χώρος εξαρτάται από τον browser· σε περίπτωση υπέρβασης εμφανίζεται μήνυμα σφάλματος.
 - Τα βήματα και οι εικόνες παραμένουν στον συγκεκριμένο browser/προφίλ και δεν συγχρονίζονται αυτόματα. Κρατήστε τακτικά εξαγόμενα αντίγραφα.
 
@@ -28,7 +28,7 @@ Open `index.html` in a modern browser. For consistent persistence—particularly
 
 Create and edit steps, mark them complete, search and filter by category/subcategory, and choose a sort order. Select Greek or English in the header; the preference is saved in the current browser.
 
-Export downloads a JSON backup. Import can replace existing steps (after confirmation) or merge by step ID. PNG, JPEG, and WebP images are limited to 5 MB before processing, resized to at most 1200 px, and stored in LocalStorage. Storage capacity varies by browser. Data stays in the current browser profile and is not synchronized, so keep regular backups.
+Export downloads a JSON backup. Import can replace existing steps (after confirmation) or merge by step ID. Markdown import creates one step per text block separated by a blank line: the first line becomes the title and any remaining lines become description paragraphs. PNG, JPEG, and WebP images are limited to 5 MB before processing, resized to at most 1200 px, and stored in LocalStorage. Storage capacity varies by browser. Data stays in the current browser profile and is not synchronized, so keep regular backups.
 
 Steps can also be organized with tags and due dates, reordered by drag and drop, and displayed in a full-screen step-by-step presentation. Descriptions support Markdown for headings, lists, emphasis, links, blockquotes, and code blocks; presentation slides transition smoothly and fit their text automatically so scrolling is unnecessary. Unsaved form drafts are restored after the next page load, and deletion provides a short undo window.
 

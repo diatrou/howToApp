@@ -82,27 +82,34 @@ const StorageManager = {
             throw new Error('Markdown content must be text.');
         }
         const commonValues = common || {};
-        const lines = markdown.split(/\r?\n/)
-            .map(line => line
-                .replace(/^\s{0,3}#{1,6}\s*/, '')
-                .replace(/^\s{0,3}(?:[-+*]|\d+[.)])\s+/, '')
-                .trim())
-            .filter(Boolean);
+        const blocks = markdown.replace(/\r\n?/g, '\n')
+            .split(/\n\s*\n+/)
+            .map(block => block.split('\n').map(line => line.trim()).filter(Boolean))
+            .filter(lines => lines.length);
 
-        return lines.map((title, index) => ({
-            id: createId ? createId(index) : `step_${Date.now()}_${index}_${Math.random().toString(36).slice(2)}`,
-            category: String(commonValues.category || '').trim(),
-            subcategory: String(commonValues.subcategory || '').trim(),
-            title,
-            order: index + 1,
-            description: title,
-            tags: Array.isArray(commonValues.tags)
-                ? [...commonValues.tags]
-                : [],
-            dueDate: String(commonValues.dueDate || ''),
-            image: '',
-            completed: false
-        }));
+        return blocks.map((lines, index) => {
+            const title = lines[0]
+                .replace(/^#{1,6}\s*/, '')
+                .replace(/^(?:[-+*]|\d+[.)])\s+/, '')
+                .trim();
+            const description = lines.length > 1
+                ? lines.slice(1).join('\n\n')
+                : lines[0];
+            return {
+                id: createId ? createId(index) : `step_${Date.now()}_${index}_${Math.random().toString(36).slice(2)}`,
+                category: String(commonValues.category || '').trim(),
+                subcategory: String(commonValues.subcategory || '').trim(),
+                title,
+                order: index + 1,
+                description,
+                tags: Array.isArray(commonValues.tags)
+                    ? [...commonValues.tags]
+                    : [],
+                dueDate: String(commonValues.dueDate || ''),
+                image: '',
+                completed: false
+            };
+        });
     },
 
     reorderSteps(stepIds) {
