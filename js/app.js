@@ -563,7 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 startDuplicate(step);
             } else if (button.dataset.action === 'present') {
                 const visibleSteps = getVisibleSteps();
-                startPresentation(visibleSteps.length ? visibleSteps : [step]);
+                startPresentation(visibleSteps.length ? visibleSteps : [step], step.id);
             } else if (button.dataset.action === 'delete' &&
                 confirm(t('confirmDelete'))) {
                 StorageManager.deleteStep(step.id);
@@ -992,13 +992,14 @@ document.addEventListener('DOMContentLoaded', () => {
             .filter(Boolean);
     }
 
-    function startPresentation(steps) {
+    function startPresentation(steps, startStepId) {
         if (!steps.length) {
             showStatus(t('noPresentation'));
             return;
         }
         presentationSteps = steps;
-        presentationIndex = 0;
+        const startIndex = steps.findIndex(step => step.id === startStepId);
+        presentationIndex = startIndex === -1 ? 0 : startIndex;
         presentationModal.hidden = false;
         document.body.classList.add('presentation-open');
         renderPresentation();
