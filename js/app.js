@@ -525,7 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
     undoDeleteButton.addEventListener('click', () => {
         if (!deletedStep) return;
         try {
-            StorageManager.importSteps([deletedStep], false);
+            StorageManager.insertStep(deletedStep);
             deletedStep = null;
             clearTimeout(undoTimer);
             undoDeleteButton.hidden = true;

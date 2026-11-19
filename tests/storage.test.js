@@ -84,6 +84,42 @@ test('deletes only steps in the selected category and subcategory', () => {
     );
 });
 
+test('renumbers remaining steps in the deleted step group', () => {
+    installStorage({
+        howto_app_steps: JSON.stringify([
+            validStep({ id: 'git_1', subcategory: 'Git', order: 1 }),
+            validStep({ id: 'git_2', subcategory: 'Git', order: 2 }),
+            validStep({ id: 'git_3', subcategory: 'Git', order: 3 }),
+            validStep({ id: 'testing_1', subcategory: 'Testing', order: 1 }),
+            validStep({ id: 'cooking_1', category: 'Cooking', subcategory: 'Basics', order: 1 })
+        ])
+    });
+
+    StorageManager.deleteStep('git_2');
+    const remaining = StorageManager.getSteps();
+    assert.deepEqual(
+        remaining.filter(step => step.subcategory === 'Git').map(step => [step.id, step.order]),
+        [['git_1', 1], ['git_3', 2]]
+    );
+    assert.equal(remaining.find(step => step.id === 'testing_1').order, 1);
+    assert.equal(remaining.find(step => step.id === 'cooking_1').order, 1);
+});
+
+test('restores a deleted step at its original position without duplicate numbering', () => {
+    installStorage({
+        howto_app_steps: JSON.stringify([
+            validStep({ id: 'step_1', title: 'First', order: 1 }),
+            validStep({ id: 'step_3', title: 'Third', order: 3 })
+        ])
+    });
+
+    StorageManager.insertStep(validStep({ id: 'step_2', title: 'Second', order: 2 }));
+    assert.deepEqual(
+        StorageManager.getSteps().map(step => [step.id, step.order]),
+        [['step_1', 1], ['step_2', 2], ['step_3', 3]]
+    );
+});
+
 test('deletes all steps when no scope is selected', () => {
     installStorage({
         howto_app_steps: JSON.stringify([

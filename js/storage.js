@@ -42,6 +42,31 @@ const StorageManager = {
         return this.writeSteps(steps);
     },
 
+    insertStep(stepData) {
+        const steps = this.getSteps();
+        const newStep = {
+            ...stepData,
+            id: stepData.id || `step_${Date.now()}_${Math.random().toString(36).slice(2)}`
+        };
+        if (!this.isValidStep(newStep) || steps.some(step => step.id === newStep.id)) {
+            const error = new Error('A step contains invalid data and was not saved.');
+            error.code = 'invalidStep';
+            throw error;
+        }
+
+        const group = steps
+            .filter(step => this.isSameStepGroup(step, newStep))
+            .sort((a, b) => Number(a.order) - Number(b.order));
+        const insertionOrder = Math.min(Number(newStep.order), group.length + 1);
+        group.splice(insertionOrder - 1, 0, newStep);
+        const renumberedGroup = group.map((step, index) => ({ ...step, order: index + 1 }));
+        const groupIds = new Set(renumberedGroup.map(step => step.id));
+        return this.writeSteps([
+            ...steps.filter(step => !groupIds.has(step.id)),
+            ...renumberedGroup
+        ]);
+    },
+
     updateStep(stepId, stepData) {
         const steps = this.getSteps();
         const stepIndex = steps.findIndex(step => step.id === stepId);
@@ -64,8 +89,18 @@ const StorageManager = {
     },
 
     deleteStep(stepId) {
-        const steps = this.getSteps().filter(step => step.id !== stepId);
-        return this.writeSteps(steps);
+        const steps = this.getSteps();
+        const deletedStep = steps.find(step => step.id === stepId);
+        const remainingSteps = steps.filter(step => step.id !== stepId);
+        if (!deletedStep) return this.writeSteps(remainingSteps);
+
+        const group = remainingSteps
+            .filter(step => this.isSameStepGroup(step, deletedStep))
+            .sort((a, b) => Number(a.order) - Number(b.order));
+        const orderById = new Map(group.map((step, index) => [step.id, index + 1]));
+        return this.writeSteps(remainingSteps.map(step =>
+            orderById.has(step.id) ? { ...step, order: orderById.get(step.id) } : step
+        ));
     },
 
     deleteSteps(category = '', subcategory = '') {
@@ -163,6 +198,11 @@ const StorageManager = {
                 /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/]+={0,2}$/i.test(step.image)
             )) &&
             (step.completed === undefined || typeof step.completed === 'boolean');
+    },
+
+    isSameStepGroup(first, second) {
+        return first.category === second.category &&
+            (first.subcategory || '') === (second.subcategory || '');
     },
 
     createStorageError(operation, cause) {
