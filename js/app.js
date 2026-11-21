@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // DOM elements references
     const stepForm = document.getElementById('step-form');
     const stepsContainer = document.getElementById('steps-container');
+    const formSection = document.querySelector('.form-section');
+    const displaySection = document.querySelector('.display-section');
     const searchInput = document.getElementById('search-input');
     const categoryFilter = document.getElementById('category-filter');
     const subcategoryFilter = document.getElementById('subcategory-filter');
@@ -254,6 +256,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load and render steps on startup
     renderSteps();
     restoreDraft();
+    syncPairedPanelHeight();
+    if ('ResizeObserver' in window) {
+        const panelResizeObserver = new ResizeObserver(syncPairedPanelHeight);
+        panelResizeObserver.observe(formSection);
+    }
 
     stepForm.addEventListener('input', () => {
         if (!editingStepId) saveDraft();
@@ -384,6 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     window.addEventListener('resize', () => {
         if (!presentationModal.hidden) fitPresentationToScreen();
+        syncPairedPanelHeight();
     });
 
     exportButton.addEventListener('click', () => {
@@ -673,6 +681,15 @@ document.addEventListener('DOMContentLoaded', () => {
         cancelEditButton.hidden = true;
         clearDraft();
         document.getElementById('description').focus();
+    }
+
+    function syncPairedPanelHeight() {
+        if (!formSection || !displaySection) return;
+        if (window.innerWidth <= 768) {
+            displaySection.style.height = '';
+            return;
+        }
+        displaySection.style.height = `${formSection.getBoundingClientRect().height}px`;
     }
 
     // Συνάρτηση προβολής βημάτων στην οθόνη
