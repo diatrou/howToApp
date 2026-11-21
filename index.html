@@ -40,6 +40,67 @@
             <button type="button" id="undo-delete" class="undo-button" data-i18n="undo" hidden>Αναίρεση</button>
         </p>
 
+        <!-- Κοινά εργαλεία αναζήτησης και αρχείων πάνω από τις δύο στήλες -->
+        <!-- Shared search and file tools above the two columns -->
+        <section class="card top-controls" aria-label="Εργαλεία αναζήτησης και αρχείων">
+            <div class="filter-group">
+                <label class="sr-only" for="search-input" data-i18n="searchLabel">Αναζήτηση βημάτων</label>
+                <input type="search" id="search-input" placeholder="Αναζήτηση βημάτων..." data-i18n-placeholder="searchPlaceholder">
+                <select id="status-filter" data-i18n-aria-label="statusFilterLabel">
+                    <option value="" data-i18n="allStatuses">Όλες οι καταστάσεις</option>
+                    <option value="pending" data-i18n="pendingStatus">Σε εκκρεμότητα</option>
+                    <option value="completed" data-i18n="completedStatus">Ολοκληρωμένα</option>
+                    <option value="today" data-i18n="todayStatus">Για σήμερα</option>
+                </select>
+                <input type="text" id="tag-filter" list="tag-options" placeholder="Ετικέτα..." data-i18n-placeholder="tagFilterPlaceholder">
+                <datalist id="tag-options"></datalist>
+                <label class="sr-only" for="date-filter" data-i18n="dateFilterLabel">Φίλτρο ημερομηνίας ολοκλήρωσης</label>
+                <input type="date" id="date-filter" data-i18n-aria-label="dateFilterLabel">
+                <select id="category-filter" data-i18n-aria-label="categoryFilterLabel">
+                    <option value="" data-i18n="allCategories">Όλες οι κατηγορίες</option>
+                </select>
+                <select id="subcategory-filter" data-i18n-aria-label="subcategoryFilterLabel" disabled>
+                    <option value="" data-i18n="allSubcategories">Όλες οι υποκατηγορίες</option>
+                </select>
+                <select id="sort-select" data-i18n-aria-label="sortLabel">
+                    <option value="category" data-i18n="sortCategory">Κατηγορία και σειρά</option>
+                    <option value="step" data-i18n="sortStep">Σειρά βημάτων</option>
+                    <option value="title" data-i18n="sortTitle">Τίτλος</option>
+                    <option value="recent" data-i18n="sortRecent">Νεότερα πρώτα</option>
+                </select>
+            </div>
+            <div class="data-actions">
+                <section class="data-action-group" aria-labelledby="data-actions-title">
+                    <h3 id="data-actions-title" data-i18n="dataActionsTitle">Ενέργειες βημάτων</h3>
+                    <div class="data-action-buttons">
+                        <button type="button" id="export-steps" class="btn-secondary" data-i18n="exportBackup">Εξαγωγή αντιγράφου</button>
+                        <button type="button" id="delete-all-steps" class="btn-danger" data-i18n="deleteAllSteps">Διαγραφή όλων των βημάτων</button>
+                        <button type="button" id="present-steps" class="btn-primary compact-button" data-i18n="presentSteps">Παρουσίαση</button>
+                    </div>
+                </section>
+                <section class="data-action-group" aria-labelledby="import-files-title">
+                    <h3 id="import-files-title" data-i18n="importFilesTitle">Εισαγωγή αρχείων</h3>
+                    <div class="import-file-controls">
+                        <div class="import-file-control">
+                            <label for="import-file" data-i18n="importBackup">Εισαγωγή αντιγράφου:</label>
+                            <input type="file" id="import-file" accept="application/json,.json">
+                        </div>
+                        <div class="import-file-control">
+                            <label for="import-md-file" data-i18n="importMarkdown">Εισαγωγή Markdown:</label>
+                            <input type="file" id="import-md-file" accept="text/markdown,.md,text/plain,.txt">
+                        </div>
+                        <div class="import-mode-control">
+                            <label for="import-mode" data-i18n="importModeLabel">Συμπεριφορά εισαγωγής</label>
+                            <select id="import-mode" aria-label="Συμπεριφορά εισαγωγής" data-i18n-aria-label="importModeLabel">
+                                <option value="replace" data-i18n="replaceAll">Αντικατάσταση όλων</option>
+                                <option value="merge" data-i18n="merge">Συγχώνευση</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
         <!-- Κύριος κορμός με φόρμα και λίστα προβολής -->
         <!-- Main body with form and view list -->
         <main class="grid-layout">
@@ -130,65 +191,6 @@
             <!-- Display column for entries -->
             <section class="card display-section" aria-labelledby="list-heading">
                 <h2 id="list-heading" data-i18n="listTitle">Λίστα βημάτων και συμβουλών</h2>
-                
-                <!-- Περιοχή φίλτρων αναζήτησης -->
-                <!-- Search filter area -->
-                <div class="filter-group">
-                    <label class="sr-only" for="search-input" data-i18n="searchLabel">Αναζήτηση βημάτων</label>
-                    <input type="search" id="search-input" placeholder="Αναζήτηση βημάτων..." data-i18n-placeholder="searchPlaceholder">
-                    <select id="status-filter" data-i18n-aria-label="statusFilterLabel">
-                        <option value="" data-i18n="allStatuses">Όλες οι καταστάσεις</option>
-                        <option value="pending" data-i18n="pendingStatus">Σε εκκρεμότητα</option>
-                        <option value="completed" data-i18n="completedStatus">Ολοκληρωμένα</option>
-                        <option value="today" data-i18n="todayStatus">Για σήμερα</option>
-                    </select>
-                    <input type="text" id="tag-filter" list="tag-options" placeholder="Ετικέτα..." data-i18n-placeholder="tagFilterPlaceholder">
-                    <datalist id="tag-options"></datalist>
-                    <label class="sr-only" for="date-filter" data-i18n="dateFilterLabel">Φίλτρο ημερομηνίας ολοκλήρωσης</label>
-                    <input type="date" id="date-filter" data-i18n-aria-label="dateFilterLabel">
-                    <select id="category-filter" data-i18n-aria-label="categoryFilterLabel">
-                        <option value="" data-i18n="allCategories">Όλες οι κατηγορίες</option>
-                    </select>
-                    <select id="subcategory-filter" data-i18n-aria-label="subcategoryFilterLabel" disabled>
-                        <option value="" data-i18n="allSubcategories">Όλες οι υποκατηγορίες</option>
-                    </select>
-                    <select id="sort-select" data-i18n-aria-label="sortLabel">
-                        <option value="category" data-i18n="sortCategory">Κατηγορία και σειρά</option>
-                        <option value="step" data-i18n="sortStep">Σειρά βημάτων</option>
-                        <option value="title" data-i18n="sortTitle">Τίτλος</option>
-                        <option value="recent" data-i18n="sortRecent">Νεότερα πρώτα</option>
-                    </select>
-                </div>
-                <div class="data-actions">
-                    <section class="data-action-group" aria-labelledby="data-actions-title">
-                        <h3 id="data-actions-title" data-i18n="dataActionsTitle">Ενέργειες βημάτων</h3>
-                        <div class="data-action-buttons">
-                            <button type="button" id="export-steps" class="btn-secondary" data-i18n="exportBackup">Εξαγωγή αντιγράφου</button>
-                            <button type="button" id="delete-all-steps" class="btn-danger" data-i18n="deleteAllSteps">Διαγραφή όλων των βημάτων</button>
-                            <button type="button" id="present-steps" class="btn-primary compact-button" data-i18n="presentSteps">Παρουσίαση</button>
-                        </div>
-                    </section>
-                    <section class="data-action-group" aria-labelledby="import-files-title">
-                        <h3 id="import-files-title" data-i18n="importFilesTitle">Εισαγωγή αρχείων</h3>
-                        <div class="import-file-controls">
-                            <div class="import-file-control">
-                                <label for="import-file" data-i18n="importBackup">Εισαγωγή αντιγράφου:</label>
-                                <input type="file" id="import-file" accept="application/json,.json">
-                            </div>
-                            <div class="import-file-control">
-                                <label for="import-md-file" data-i18n="importMarkdown">Εισαγωγή Markdown:</label>
-                                <input type="file" id="import-md-file" accept="text/markdown,.md,text/plain,.txt">
-                            </div>
-                            <div class="import-mode-control">
-                                <label for="import-mode" data-i18n="importModeLabel">Συμπεριφορά εισαγωγής</label>
-                                <select id="import-mode" aria-label="Συμπεριφορά εισαγωγής" data-i18n-aria-label="importModeLabel">
-                                    <option value="replace" data-i18n="replaceAll">Αντικατάσταση όλων</option>
-                                    <option value="merge" data-i18n="merge">Συγχώνευση</option>
-                                </select>
-                            </div>
-                        </div>
-                    </section>
-                </div>
 
                 <!-- Δυναμική λίστα βημάτων -->
                 <!-- Dynamic steps list container -->
